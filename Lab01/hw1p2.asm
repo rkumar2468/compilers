@@ -4,7 +4,7 @@
 
 .data
 ## Basic message strings ##
-str1: .asciiz "\nEnter a two numbers: "
+str1: .asciiz "\nEnter two numbers: "
 str2: .asciiz "\nGCD: "
 str3: .asciiz "\n"
 str5: .asciiz "-------GCD in MIPS.!-------\n"
