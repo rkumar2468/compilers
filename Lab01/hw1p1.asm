@@ -1,4 +1,8 @@
-## Question 1: Hailstone Sequence in MIPS ##
+##############################################################
+## Question 1: Hailstone Sequence in MIPS 		    ##
+## Input: Any positive integer.		  		    ##
+## Output: Hailstone sequence.		  		    ##
+##############################################################
 
 .globl	main
 
@@ -23,16 +27,16 @@ main:
 
 ## Reading input
 	la $a0, str1
-	li $v0, 4 # print_string syscall number
+	li $v0, 4 	# print_string syscall number
 	syscall
 	li $v0, 5	# read_int syscall number
 	syscall
 	ori $t0, $v0, 0	# Storing the entered value into $t0
 
-## Generating hailstone sequence	##
+## Generating hailstone sequence ##
 	blez $t0, exit	# Initial condition check for negative numbers.
 	la $a0, str2
-	li $v0, 4 # print_string syscall number - for printing Sequence message.
+	li $v0, 4 	# print_string syscall number - for printing Sequence message.
 	syscall
 
 loop:
@@ -42,25 +46,31 @@ loop:
 	jal printCommaSpace
 	li $t2, 2
 	div $t0, $t2
-	mfhi $t3	# Cannot use HI directly -- reason ??
+	mfhi $t3	# Cannot use HI directly, so have to move the value to any general purpose register.
 	beq $t3, $t1, odd # Odd num check.
 	b even
+
+## Odd Processing ##
 odd:
 	li $t4, 3
 	multu $t0, $t4
 	mflo $t0
 	addi $t0, $t0, 1
 	b loop
+
+## Even Processing ##
 even:
 	mflo $t0
 	b loop
 
+## For printing a comma followed by a space to the console/stdout ##
 printCommaSpace:
 	la $a0, str3
 	li $v0, 4 # print_string syscall number
 	syscall
 	jr $ra	# To return back to the caller.
 
+## For printing the number present in $t0 register to the console/stdout ##
 printnum:
 	move $a0, $t0
 	li $v0, 1 # print_number syscall number

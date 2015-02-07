@@ -1,13 +1,20 @@
-## Question 4: Finding whether a number is perfect, deficient or abundant in MIPS ##
+##############################################################
+## Question 4: Finding whether a number is perfect, 	    ##	
+##	       deficient or abundant in MIPS 		    ##
+## Input: A positive integer.		  		    ##
+## Output: Outputs "Perfect"/"Deficient"/"Abundant" 	    ##
+##############################################################
+
+
 
 .globl	main
 
 .data
 ## Basic message strings ##
 str1: .asciiz "\nEnter a number: "
-str2: .asciiz "\nPerfect.!"
+str2: .asciiz "\nPerfect"
 str3: .asciiz "\n"
-str4: .asciiz "\nDeficient.!"
+str4: .asciiz "\nDeficient"
 str5: .asciiz "\nAbundant"
 str6: .asciiz "-------Finding whether a number is perfect, deficient or abundant.!-------\n"
 

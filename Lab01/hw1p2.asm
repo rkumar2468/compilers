@@ -1,4 +1,8 @@
-## Question 2: GCD in MIPS ##
+##############################################################
+## Question 2: GCD in MIPS				    ##
+## Input: Two positive integers.			    ##
+## Output: GCD of the two numbers.	  		    ##
+##############################################################
 
 .globl	main
 
@@ -38,7 +42,7 @@ main:
 
 	## Either of the numbers is a non-zero positive number ##
 	la $a0, str2
-	li $v0, 4 # print_string syscall number - for printing the message.
+	li $v0, 4 	# print_string syscall number - for printing the message.
 	syscall
 
 gcd:

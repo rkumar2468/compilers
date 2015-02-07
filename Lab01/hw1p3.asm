@@ -1,4 +1,11 @@
-## Question 3: Find maximum k value for which n*(2^k) >= (k!) holds for a given "n" in MIPS ##
+##############################################################
+## Question 3: Find maximum k value for which 		    ##
+##	      n*(2^k) >= (k!) holds for a given "n" in MIPS ##
+## Input: A positive integer.		  		    ##
+## Output: Minumum value of k which doesnt satisfy the 	    ##
+##	   above condition.				    ##
+##############################################################
+
 
 .globl	main
 
