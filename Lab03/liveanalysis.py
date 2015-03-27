@@ -155,9 +155,12 @@ class LiveAnalysis:
                             list.append(key)
                         else:
                             # print "List ", list
+                            if 'print' in list:
+                                list.append(';')
                             self.Dict[i] = list
                             list = []
                             i += 1
+                    ## For End LOOP Tags ##
                     if len(list) > 0:
                         self.Dict[i] = list
                         list = []

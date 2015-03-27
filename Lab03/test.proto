@@ -45,7 +45,7 @@ z = y;
 a = y;
 b = a;
 d = z;
-while (x) do {
+while (x>120) do {
   print (x);
   x = x-1;
 }

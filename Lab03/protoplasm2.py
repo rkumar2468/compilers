@@ -69,4 +69,4 @@ if __name__ == '__main__':
     import CGen
     cgen = CGen.CodeGen(asmfile, live.allocReg, live.Dict, removeVariables)
     cgen.generateIntermediateCode()
-    # cgen.generateASM()
+    cgen.generateASM()

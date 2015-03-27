@@ -20,6 +20,20 @@ class CodeGen:
         self.unusedVar = remVar
         self.labelCount = 0
         self.labelStack = []
+        self.ifLabelStack = []
+        self.loopLabelStack = []
+        self.loop2LabelStack = []
+
+    def genLabel(self):
+        ret = ' LABEL%s' %self.labelCount
+        self.labelCount += 1
+        return ret
+
+    def peekLabel(self, type):
+        if type == 'if':
+            return self.ifLabelStack[-1]
+        elif type == 'while':
+            return self.loopLabelStack[-1]
 
     ## Sbrk system call - To Allocate memory ##
     def allocMem(self, bytes):
@@ -434,23 +448,42 @@ class CodeGen:
                 operands.append(reg)
         elif list[0] == 'print':
             length = len(list)
-            if length > 4:
-                exp = list[2:length-2]
-            else:
-                exp = list[2:length-1]
+
+            ## This is handled in live analysis ##
+            # if length > 4:
+            #     exp = list[2:length-2]
+            # else:
+            #     exp = list[2:length-1]
+
+            exp = list[2:length-2]
             binexp, reg = self.evaluateExpression(exp)
             res += binexp
-        elif re.match('print ', list[0]):
-            x = 10
-        elif re.match('print ', list[0]):
-            x = 10
-
+        # elif re.match('if', list[0]):
+        #     x = 10
+        # elif re.match('print ', list[0]):
+        #     x = 10
+        else:
+            ## Simple Variable or a Number##
+            if re.search('^[0-9]+$', list[0]):
+                res += '; li $t8, %s; ' %list[0]
+                reg = '$t8'
+            else:
+                reg = '$'+self.allocReg[list[0]]
         return res, reg
+
+    def getIfLabel(self):
+        return self.ifLabelStack.pop()
+
+    def getLoopLabel(self):
+        return self.loopLabelStack.pop()
+
+    def getLoop2Label(self):
+        return self.loop2LabelStack.pop()
 
     def generateIntermediateCode(self):
         for key in self.Dict.keys():
             lis = []
-            # print key, self.Dict[key]
+            # print "Raa -- ", key, self.Dict[key]
             val = self.Dict[key]
             if len(val) > 1 and val[1] == '=':
                 defn = val[0]
@@ -460,17 +493,53 @@ class CodeGen:
                     lis.append(ret)
                     lis.append('; ori $%s, %s, $zero;; ' %(self.allocReg[defn], reg))
             elif val[0] == 'print':
-                # print " hi raj ", val
                 ret, reg = self.evaluateExpression(val)
                 if ret:
                     lis.append(ret)
                     lis.append('; ori $a0, %s, $zero;; ' %(reg))
                     lis.append(self.printInt())
+                elif reg:
+                    lis.append('; ori $a0, %s, $zero;; ' %(reg))
+                    lis.append(self.printInt())
+            elif val[0] == 'if':
+                label = self.genLabel()
+                self.ifLabelStack.append(label)
+
+                ret, reg = self.evaluateExpression(val[1:])
+                if ret:
+                    lis.append(ret)
+                    ## Branch based on reg ##
+                    lis.append('; beq %s, $zero, %s;; ' %(reg, label))
+                elif reg:
+                    ## Just Branch ##
+                    lis.append('; blez %s, %s;; ' %(reg, label))
+            elif val[0] == 'if_end' or val[0] == 'if_else_end' :
+                lis.append('%s:;' %self.getIfLabel())
+            elif val[0] == 'else':
+                label = self.genLabel()
+                lis.append('; beq $zero, $zero, %s;; ' %(label))
+                lis.append('%s:;' %self.getIfLabel())
+                self.ifLabelStack.append(label)
+            elif val[0] == 'LOOP':
+                label = self.genLabel()
+                self.loopLabelStack.append(label)
+                label2 = self.genLabel()
+                self.loop2LabelStack.append(label2)
+                lis.append('; %s:;' %label)
+                ret, reg = self.evaluateExpression(val[1:])
+                if ret:
+                    lis.append(ret)
+                if reg:
+                    lis.append('; beq %s, $zero, %s;; ' %(reg, label2))
+
+            elif val[0] == 'END_LOOP':
+                lis.append('; beq $zero, $zero, %s' %self.getLoopLabel())
+                lis.append('; %s:;' %self.getLoop2Label())
 
             ## Appending to main list ##
             self.ic.append(lis)
-        # for line in self.ic:
-        #     print line
+        for line in self.ic:
+            print line
 
     def generateASM(self):
         self.generateHeaders()
