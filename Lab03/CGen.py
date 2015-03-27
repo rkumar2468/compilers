@@ -1,11 +1,11 @@
 ##########################################################################################################
-## Class: CodeGen											##
-## This class is responsible to generate the final code (XXX.asm) file 					##
-## 													##
-##													##
-## Name: 	Rajendra Kumar Raghupatruni		    						##
-## SBU Net ID: 	rraghuaptrun				    						##
-## SBU ID: 	109785402				    						##
+## Class: CodeGen											                                            ##
+## This class is responsible to generate the final code (XXX.asm) file 					                ##
+## 													                                                    ##
+##													                                                    ##
+## Name: 	Rajendra Kumar Raghupatruni		    						                                ##
+## SBU Net ID: 	rraghuaptrun				    						                                ##
+## SBU ID: 	109785402				    						                                        ##
 ##########################################################################################################
 
 import re
@@ -18,6 +18,8 @@ class CodeGen:
         self.Dict = Dict
         self.ic = []
         self.unusedVar = remVar
+        self.labelCount = 0
+        self.labelStack = []
 
     ## Sbrk system call - To Allocate memory ##
     def allocMem(self, bytes):
@@ -38,221 +40,437 @@ class CodeGen:
     def printInt(self):
         return '; ## Adding New Line ##; ori $t8, $a0, 0; la $a0, str4; li $v0, 4; syscall;; ## Printing Integer ##; ori $a0, $t8, 0; li $v0, 1; syscall;;'
 
+    def evalBinExp(self, var1, var2, op):
+        ret = ''
+        reg = ''
+        if op == '+':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                if re.search('^[0-9]+$', var2):
+                    ret += "; addi $v0, $t8, $%s;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; add $v0, $t8, %s;" %(var2)
+                    else:
+                        ret += "; add $v0, $t8, $%s;" %(self.allocReg[var2])
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                if re.search('^[0-9]+$', var2):
+                    ret += "; addi $v0, $t8, %s;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; add $v0, $t8, %s;" %var2
+                    else:
+                        ret += "; add $v0, $t8, $%s;" %(self.allocReg[var2])
+            reg = '$v0'
+        elif op == '-':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sub $v0, $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sub $v0, $t8, %s;" %(var2)
+                    else:
+                        ret += "; sub $v0, $t8, $%s;" %(self.allocReg[var2])
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sub $v0, $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sub $v0, $t8, %s;" %(var2)
+                    else:
+                        ret += "; sub $v0, $t8, $%s;" %(self.allocReg[var2])
+            reg = '$v0'
+        elif op == '*':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; mult $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; mult $t8, %s;" %(var2)
+                    else:
+                        ret += "; mult $t8, $%s;" %(self.allocReg[var2])
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; mult $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; mult $t8, %s;" %(var2)
+                    else:
+                        ret += "; mult $t8, $%s;" %(self.allocReg[var2])
+            reg = '$LO'
+        elif op == '/' or op == '%':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; div $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; div $t8, %s;" %(var2)
+                    else:
+                        ret += "; div $t8, $%s;" %(self.allocReg[var2])
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; div $t8, $t9;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; div $t8, %s;" %(var2)
+                    else:
+                        ret += "; div $t8, $%s;" %(self.allocReg[var2])
+            if op == '/':
+                reg = '$LO'
+            else:
+                reg = '$HI'
+        elif op == '||':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                ret += '; sgt $t9, $t8, $zero; bgtz $t8, LABEL%s;' %(self.labelCount)
+                self.labelStack.append('LABEL%s:;' %self.labelCount)
+                self.labelCount += 1
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t8, %s; sgt $t9, $t8, $zero;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $t9, %s, $zero;;" %(var2)
+                    else:
+                        ret += "; sgt $t9, $%s, $zero;;" %(self.allocReg[var2])
+                ret += self.labelStack.pop()
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                ret += '; sgt $t9, $t8, $zero; bgtz $t8, LABEL%s' %self.labelCount
+                self.labelStack.append('LABEL%s:;' %self.labelCount)
+                self.labelCount += 1
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t8, %s; sgt $t9, $t8, $zero;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $t9, %s, $zero;;" %(var2)
+                    else:
+                        ret += "; sgt $t9, $%s, $zero;;" %(self.allocReg[var2])
+                ret += self.labelStack.pop()
+            reg = '$t9'
+        elif op == '&&':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+                ret += '; sgt $t9, $t8, $zero; blez $t8, LABEL%s' %self.labelCount
+                self.labelStack.append('LABEL%s:;' %self.labelCount)
+                self.labelCount += 1
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t8, %s; sgt $t9, $t8, $zero;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $t9, %s, $zero;;" %(var2)
+                    else:
+                        ret += "; sgt $t9, $%s, $zero;;" %(self.allocReg[var2])
+                ret += self.labelStack.pop()
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s, $zero;" %(self.allocReg[var1])
+                ret += '; sgt $t9, $t8, $zero; blez $t8, LABEL%s' %self.labelCount
+                self.labelStack.append('LABEL%s:;' %self.labelCount)
+                self.labelCount += 1
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t8, %s; sgt $t9, $t8, $zero;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $t9, %s, $zero;;" %(var2)
+                    else:
+                        ret += "; sgt $t9, $%s, $zero;;" %(self.allocReg[var2])
+
+                ret += self.labelStack.pop()
+            reg = '$t9'
+
+        elif op == '==':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; seq $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; seq $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; seq $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; seq $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; seq $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; seq $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            reg = '$v0'
+
+        elif op == '!=':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sne $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sne $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sne $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sne $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sne $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sne $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            reg = '$v0'
+        elif op == '<':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; slt $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; slt $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; slt $v0, $%s, $t8;;" %(self.allocReg[var2])
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; slt $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; slt $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; slt $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            reg = '$v0'
+        elif op == '<=':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sle $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sle $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sle $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sle $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sle $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sle $v0, $%s, $t8;;" %(self.allocReg[var2])
+            reg = '$v0'
+        elif op == '>':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sgt $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sgt $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sgt $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sgt $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sgt $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            reg = '$v0'
+        elif op == '>=':
+            if re.search('^[0-9]+$', var1):
+                ret += "; li $t8, %s;" %(var1)
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sge $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sge $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sge $v0, $%s, $t8;;" %(self.allocReg[var2])
+
+            else:
+                if re.match('^\$', var1):
+                    ret += "; ori $t8, %s, $zero;" %(var1)
+                else:
+                    ret += "; ori $t8, $%s $zero;" %(self.allocReg[var1])
+
+                if re.search('^[0-9]+$', var2):
+                    ret += "; li $t9, %s; sge $v0, $t9, $t8;;" %(var2)
+                else:
+                    if re.match('^\$', var2):
+                        ret += "; sge $v0, %s, $t8;;" %(var2)
+                    else:
+                        ret += "; sge $v0, $%s, $t8;;" %(self.allocReg[var2])
+            reg = '$v0'
+
+        return ret, reg
+
+    def evaluateExpression(self, list):
+        res = ''
+        reg = ''
+        print list
+        if list[0] == 'input':
+            res = self.inputInt()
+            reg = '$v0'
+        elif re.match('UNARY ', list[0]):
+            if list[0][6] == '!':
+                var = list[0][7:]
+                if re.search('^[0-9]+$', var):
+                    res = '; li $t8, $%s;' %(var)
+                    res += '; seq $t9, $t8, $zero;'
+                else:
+                    res = '; ori $t8, $%s, 0;' %(self.allocReg[var])
+                    res += '; seq $t9, $t8, $zero;'
+
+            elif list[0][6] == '-':
+                var = list[0][7:]
+                if re.search('^[0-9]+$', var):
+                    res = '; li $t8, $%s;' %(var)
+                    res += '; sub $t9, $zero, $t8;'
+                else:
+                    res = '; ori $t8, $%s, 0;' %(self.allocReg[var])
+                    res += '; sub $t9, $zero, $t8;'
+            reg = '$t9'
+        elif re.match('BINARY ', list[0]):
+            opers = []
+            operands = []
+            counter = 0
+            for x in list:
+                if 'UNARY ' in x:
+                    tmp1, tmpreg = self.evaluateExpression([x])
+                    res += tmp1
+                    reg = tmpreg
+                    operands.append(reg)
+                    counter += 1
+                elif 'BINARY ' in x:
+                    opers.append(x[7:])
+                    counter = 0
+                else:
+                    operands.append(x)
+                    counter+=1
+
+                if len(operands) >= 2 and len(opers) > 0 and counter == 2:
+                    x1 = operands.pop()
+                    x2 = operands.pop()
+                    oper = opers.pop()
+                    binexp, reg = self.evalBinExp(x2,x1,oper)
+                    res += binexp
+                    operands.append(reg)
+                    counter -= 1
+
+            ## Once For Loop is exhausted ##
+            if len(oper) > 0 and len(operands)>1:
+                x1 = operands.pop()
+                x2 = operands.pop()
+                oper = opers.pop()
+                binexp, reg = self.evalBinExp(x2,x1,oper)
+                res += binexp
+                operands.append(reg)
+        elif list[0] == 'print':
+            length = len(list)
+            if length > 4:
+                exp = list[2:length-2]
+            else:
+                exp = list[2:length-1]
+            binexp, reg = self.evaluateExpression(exp)
+            res += binexp
+        elif re.match('print ', list[0]):
+            x = 10
+        elif re.match('print ', list[0]):
+            x = 10
+
+        return res, reg
+
     def generateIntermediateCode(self):
-        memcount = 0
-        memory = {}
         for key in self.Dict.keys():
-            # print self.Dict[key]
-            val = self.Dict[key]
             lis = []
-            if 'print' not in val and 'memory' not in val:
+            # print key, self.Dict[key]
+            val = self.Dict[key]
+            if len(val) > 1 and val[1] == '=':
                 defn = val[0]
                 temp = val[2:]
-                length = len(temp)
-                if length == 3:
-                    # input or x + y
-                    if temp[0] == 'input':
-                        lis.append(self.inputInt())
-                        if defn not in self.unusedVar:
-                            lis.append(' ori $%s, $v0, 0;' %(self.allocReg[defn]))
-                    else:
-                        # x + y
-                        if temp[1] == '+':
-                            if re.search('^[0-9]+$', temp[0]):
-                                lis.append(" li $t8, %s;" %(temp[0]))
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t9, %s;" %(temp[2]))
-                                    lis.append(" add $%s, $t8, $t9;" %(self.allocReg[defn]))
-                                else:
-                                    lis.append(" add $%s, $t8, $%s;" %(self.allocReg[defn], self.allocReg[temp[2]]))
-                            else:
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t8, %s;" %(temp[2]))
-                                    lis.append(" add $%s, $t8, $%s;" %(self.allocReg[defn],self.allocReg[temp[0]]))
-                                else:
-                                    lis.append(" add $%s, $%s, $%s;" %(self.allocReg[defn], self.allocReg[temp[0]],self.allocReg[temp[2]]))
+                ret, reg = self.evaluateExpression(temp)
+                if ret:
+                    lis.append(ret)
+                    lis.append('; ori $%s, %s, $zero;; ' %(self.allocReg[defn], reg))
+            elif val[0] == 'print':
+                # print " hi raj ", val
+                ret, reg = self.evaluateExpression(val)
+                if ret:
+                    lis.append(ret)
+                    lis.append('; ori $a0, %s, $zero;; ' %(reg))
+                    lis.append(self.printInt())
 
-                        elif temp[1] == '-':
-                            if re.search('^[0-9]+$', temp[0]):
-                                lis.append("li $t8, %s;" %(temp[0]))
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t9, %s;" %(temp[2]))
-                                    lis.append(" sub $%s, $t8, $t9;" %(self.allocReg[defn]))
-                                else:
-                                    lis.append(" sub $%s, $t8, $%s;" %(self.allocReg[defn], self.allocReg[temp[2]]))
-                            else:
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t8, %s;" %(temp[2]))
-                                    lis.append(" sub $%s, $%s, $t8;" %(self.allocReg[defn],self.allocReg[temp[0]]))
-                                else:
-                                    lis.append(" sub $%s, $%s, $%s;" %(self.allocReg[defn], self.allocReg[temp[0]],self.allocReg[temp[2]]))
-
-                        elif temp[1] == '*':
-                            if re.search('^[0-9]+$', temp[0]):
-                                lis.append(" li $t8, %s;" %(temp[0]))
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t9, %s;" %(temp[2]))
-                                    lis.append(" mult $t8, $t9;")
-                                else:
-                                    lis.append(" mult, $t8, $%s;" %(self.allocReg[temp[2]]))
-                            else:
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t8, %s;" %(temp[2]))
-                                    lis.append(" mult $%s, $t8;" %(self.allocReg[temp[0]]))
-                                else:
-                                    lis.append(" mult $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                            lis.append(" mflo $%s;"  %(self.allocReg[defn]))
-
-                        elif temp[1] == '/':
-                            if re.search('^[0-9]+$', temp[0]):
-                                lis.append(" li $t8, %s;" %(temp[0]))
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t9, %s;" %(temp[2]))
-                                    lis.append(" div $t8, $t9;")
-                                else:
-                                    lis.append(" div, $t8, $%s;" %(self.allocReg[temp[2]]))
-                            else:
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t8, %s;" %(temp[2]))
-                                    lis.append(" div $%s, $t8;" %(self.allocReg[temp[0]]))
-                                else:
-                                    lis.append(" div $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                            lis.append(" mflo $%s;" %(self.allocReg[defn]))
-
-                        elif temp[1] == '%':
-                            if re.search('^[0-9]+$', temp[0]):
-                                lis.append(" li $t8, %s;" %(temp[0]))
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t9, %s;" %(temp[2]))
-                                    lis.append(" div $t8, $t9;")
-                                else:
-                                    lis.append(" div, $t8, $%s;" %(self.allocReg[temp[2]]))
-                            else:
-                                if re.search('^[0-9]+$', temp[2]):
-                                    lis.append(" li $t8, %s;" %(temp[2]))
-                                    lis.append(" div $%s, $t8;" %(self.allocReg[temp[0]]))
-                                else:
-                                    lis.append(" div $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                            lis.append(" mfhi $%s;" %(self.allocReg[defn]))
-
-                elif length == 1:
-                    # x or 1
-                    # print temp
-                    if re.search('^[0-9]+$', temp[0]):
-                        lis.append(" li $%s, %s;" %(self.allocReg[defn],temp[0]))
-                    else:
-                        lis.append(" ori $%s, $%s, 0;" %(self.allocReg[defn],self.allocReg[temp[0]]))
-                
-            elif 'memory' not in val:
-                temp = val[2:-1]
-                length = len(temp)
-                if length == 3:
-                    if temp[1] == '+':
-                        # add
-                        if re.search('^[0-9]+$', temp[0]):
-                            lis.append(" li $t8, %s;" %(temp[0]))
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t9, %s;" %(temp[2]))
-                                lis.append(" add $a0, $t8, $t9;")
-                            else:
-                                lis.append(" add $a0, $t8, $%s;" %(self.allocReg[temp[2]]))
-                        else:
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t8, %s;" %(temp[2]))
-                                lis.append(" add $a0, $t8, $%s;" %(self.allocReg[temp[0]]))
-                            else:
-                                lis.append(" add $a0, $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                        # print  lis
-                    elif temp[1] == '-':
-                        #     Sub
-                        if re.search('^[0-9]+$', temp[0]):
-                            lis.append(" li $t8, %s;" %(temp[0]))
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t9, %s;" %(temp[2]))
-                                lis.append(" sub $a0, $t8, $t9;")
-                            else:
-                                lis.append(" sub $a0, $t8, $%s;" %(self.allocReg[temp[2]]))
-                        else:
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t8, %s;" %(temp[2]))
-                                lis.append(" sub $a0, $%s, $t8;" %(self.allocReg[temp[0]]))
-                            else:
-                                lis.append(" sub $a0, $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                        # print  lis
-                        # print ""
-                    elif temp[1] == '*':
-                        #     Mul
-                        if re.search('^[0-9]+$', temp[0]):
-                            lis.append(" li $t8, %s;" %(temp[0]))
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append("  li $t9, %s;" %(temp[2]))
-                                lis.append(" mult $t8, $t9;")
-                            else:
-                                lis.append(" mult, $t8, $%s;" %(self.allocReg[temp[2]]))
-                        else:
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t8, %s;" %(temp[2]))
-                                lis.append(" mult $%s, $t8;" %(self.allocReg[temp[0]]))
-                            else:
-                                lis.append(" mult $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                        lis.append(" mflo $a0;")
-
-                    elif temp[1] == '/':
-                        # Div
-                        if re.search('^[0-9]+$', temp[0]):
-                            lis.append(" li $t8, %s;" %(temp[0]))
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t9, %s;" %(temp[2]))
-                                lis.append(" div $t8, $t9;")
-                            else:
-                                lis.append(" div, $t8, $%s;" %(self.allocReg[temp[2]]))
-                        else:
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t8, %s;" %(temp[2]))
-                                lis.append(" div $%s, $t8;" %(self.allocReg[temp[0]]))
-                            else:
-                                lis.append(" div $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                        lis.append(" mflo $a0;")
-
-                    elif temp[1] == '%':
-                        # Reminder
-                        if re.search('^[0-9]+$', temp[0]):
-                            lis.append(" li $t8, %s;" %(temp[0]))
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t9, %s;" %(temp[2]))
-                                lis.append(" div $t8, $t9;")
-                            else:
-                                lis.append(" div, $t8, $%s;" %(self.allocReg[temp[2]]))
-                        else:
-                            if re.search('^[0-9]+$', temp[2]):
-                                lis.append(" li $t8, %s;" %(temp[2]))
-                                lis.append(" div $%s, $t8;" %(self.allocReg[temp[0]]))
-                            else:
-                                lis.append(" div $%s, $%s;" %(self.allocReg[temp[0]],self.allocReg[temp[2]]))
-                        lis.append(" mfhi $a0;")
-                elif length == 1:
-                    if re.search('^[0-9]+$', temp[0]):
-                        lis.append(" li $a0, %s;" %(temp[0]))
-                    else:
-                        lis.append((" ori $a0, $%s, 0;") %(self.allocReg[temp[0]]))
-                elif length == 0:
-                    lis.append(" li $a0, 0;")
-                lis.append(self.printInt())
-                # print lis
-            else:
-                if val[0] == 'memory':
-                    ## Allocate Memory - 4 Bytes (as it is an integer) ##
-                    temp = val[2:]
-                    memory[temp[0][:-1]] = memcount
-                    lis.append(";## Storing Register Values to Memory ##; la $t8, memory;")
-                    lis.append(" sw $%s, %d($t8);;" %(self.allocReg[temp[0]], memory[temp[0][:-1]]))
-                    memcount += 4
-                elif val[2] == 'memory':
-                    temp = val[0:]
-                    lis.append(";## Loading Register Values from Memory ##; la $t8, memory;")
-                    lis.append(" lw $%s, %d($t8);;" %(self.allocReg[temp[0]], memory[temp[0][:-1]]))
+            ## Appending to main list ##
             self.ic.append(lis)
-        # print self.ic
+        # for line in self.ic:
+        #     print line
 
     def generateASM(self):
         self.generateHeaders()

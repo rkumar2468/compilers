@@ -147,6 +147,7 @@ class LiveAnalysis:
                 if len(appendVal) == 0:
                     done = 0
                     continue
+                # print "Val: ", appendVal
                 if appendVal[0] in ['if', 'LOOP']:
                     list = []
                     for key in appendVal:
@@ -157,6 +158,11 @@ class LiveAnalysis:
                             self.Dict[i] = list
                             list = []
                             i += 1
+                    if len(list) > 0:
+                        self.Dict[i] = list
+                        list = []
+                        i += 1
+
                 else:
                     self.Dict[i] = appendVal
                     i += 1

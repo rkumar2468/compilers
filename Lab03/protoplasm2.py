@@ -64,7 +64,9 @@ if __name__ == '__main__':
     print live.allocReg
 
     asmfile = fileName.split('.')[0]+'.asm'
-
-    cgen = CGen.CodeGen(self.asmfile, live.allocReg, self.Dict, self.removeVariables)
+    removeVariables = []
+    # Dict = []
+    import CGen
+    cgen = CGen.CodeGen(asmfile, live.allocReg, live.Dict, removeVariables)
     cgen.generateIntermediateCode()
-    cgen.generateASM()
+    # cgen.generateASM()

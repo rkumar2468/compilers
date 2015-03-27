@@ -1,7 +1,13 @@
+while 1
+do
+    x = 1;
+
 x = input();
 y = - x;
+z= input();
 //print (y);
 y = x + - x;
+b = x - x / y *z / 10;
 print (y);
 print (x+x);
 print (x-x);
