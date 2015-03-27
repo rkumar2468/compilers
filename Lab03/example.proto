@@ -1,0 +1,49 @@
+x = 5;
+y = input();
+z = !x;
+
+if x > 10
+then
+    if y == 2
+    then
+    {
+        z=1;
+        print (z);
+    }
+    else
+    {
+        z=2;
+        print (z);
+    }
+// if x < (!y)
+// then
+// {
+   // b = 10;
+   // print (b);
+// }
+ //else
+   //  b = 14;
+
+while x && !y
+do
+{
+   b = 100;
+   c = 10;
+   while b == 100
+   do
+   {
+    print (b);
+   }
+
+   if x == y
+   then
+    z = 10;
+
+}
+ x = 11 && 15;
+{
+    a = 10;
+    b = 15;
+    x = b;
+}
+print (x+x&&y);

@@ -1,0 +1,56 @@
+x = input();
+y = - x;
+//print (y);
+y = x + - x;
+print (y);
+print (x+x);
+print (x-x);
+print (x+-x);
+print (x*x);
+print (x/x);
+print (x%x);
+print (x&&x);
+print (0&&x);
+print (x||x);
+print (0||x);
+print (x==x);
+print (x==4);
+print (x!=x);
+print (x!=4);
+print (x>x);
+print (x>=x);
+print (x<x);
+print (x<=x);
+print (-x);
+print (!x);
+print (!0);
+z = 100; //remove this
+if (x) then
+  print (10);
+if (!x) then {
+  print (20);
+  z = 1;
+}
+else
+  print (30);
+x = 10;
+y = x;
+z = y;
+a = y;
+b = a;
+d = z;
+while (x) do {
+  print (x);
+  x = x-1;
+}
+print (z);
+x = 2;
+if (x) then {
+  if (x) then {
+    if (x-2) then {
+      print (111);
+    } else {
+      print (11);
+    }
+  }
+}
