@@ -1,0 +1,11 @@
+x=10;
+y=11;
+z=x+y;
+c = input();
+print (z);
+print (c);
+c = x + z;
+print (c);
+a = 10;
+x = a + c;
+print (a * x);
