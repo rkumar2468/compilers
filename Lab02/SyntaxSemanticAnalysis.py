@@ -332,6 +332,8 @@ class SyntaxSemanticAnalysis:
                 self.buildDict(newstmt)
             # print newstmt
             # print "\nIntermediate Code:"
+            print live.allocReg
+
             cgen = CGen.CodeGen(self.asmfile, live.allocReg, self.Dict, self.removeVariables)
             cgen.generateIntermediateCode()
             cgen.generateASM()
