@@ -485,6 +485,9 @@ class CodeGen:
             lis = []
             # print "Raa -- ", key, self.Dict[key]
             val = self.Dict[key]
+            if len(val) <= 0:
+                continue
+
             if len(val) > 1 and val[1] == '=':
                 defn = val[0]
                 temp = val[2:]

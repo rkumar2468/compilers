@@ -56,8 +56,11 @@ if __name__ == '__main__':
     else :
         print "File: <%s> is empty.!" %(fileName)
         sys.exit(-1)
-    print "Intermediate Code: ", Parser.intermediateCode
 
+    ## Static Semantic Analysis ##
+    # print "Intermediate Code: ", Parser.intermediateCode
+
+    ## Live Analysis ##
     import liveanalysis
     live = liveanalysis.LiveAnalysis(Parser.intermediateCode)
     live.run()
@@ -65,7 +68,8 @@ if __name__ == '__main__':
 
     asmfile = fileName.split('.')[0]+'.asm'
     removeVariables = []
-    # Dict = []
+
+    ## Final Code Generation ##
     import CGen
     cgen = CGen.CodeGen(asmfile, live.allocReg, live.Dict, removeVariables)
     cgen.generateIntermediateCode()

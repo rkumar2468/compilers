@@ -115,7 +115,6 @@ class LiveAnalysis:
                 else:
                     continue
 
-
             if line == 'BRANCH LABEL_WHILE':
                 whileStart += 1
                 if appendVal:
@@ -182,6 +181,8 @@ class LiveAnalysis:
         # return
         for key in self.Dict.keys():
             list = self.Dict[key]
+            # if len(list) <=0:
+            #     continue
             if len(list) > 1 and list[1] == '=':
                 self.Def.append(self.Dict[key][0])
                 for val in list[2:]:
@@ -195,7 +196,7 @@ class LiveAnalysis:
                         else:
                             self.Use.append(val)
 
-            elif self.Dict[key][0] == 'print':
+            elif len(list) > 0 and self.Dict[key][0] == 'print':
                 ## Update use variable ##
                 for val in list[1:]:
                     if (not re.search('^[0-9]+$', val) and val not in [')', '(', ';']):
@@ -261,8 +262,13 @@ class LiveAnalysis:
             if tempInDict == self.inDict:
                 break
 
-        print self.inDict, self.outDict
+        # print "In Dict: ", self.inDict
+        # print "Out Dict: ", self.outDict
         # print variables
+
+        ## Checking for static semantics ##
+        # print self.inS
+
         ## Generating Interference Graph ##
         for i in self.variables:
             unionSet = sets.Set([])
@@ -323,6 +329,57 @@ class LiveAnalysis:
             else:
                 break
 
+    def max(self, i, j):
+        if i > j:
+            return i
+        else:
+            return j
+
+    def getAssignmentList(self, element, n):
+        return ['memory', '=', element+str(n),';']
+
+    def getElementFromMemoryList(self, element, n):
+        return [element+str(n),'=','memory',';']
+
+    def reconstructGraph2(self, element):
+        count = 1
+        length = len(self.stmt)
+        print "Raja:-- ", self.stmt
+        prevIdx = 0
+        while prevIdx < length:
+            ## Finding the element being defined ##
+            if element not in self.stmt[prevIdx:]:
+                break
+            idx1 = self.stmt.index(element,prevIdx)
+            if not idx1:
+                break
+            idx2 = self.stmt.index(';',idx1+1)
+            if not idx2:
+                break
+            temp = []
+            list1 = self.getAssignmentList(element,count)
+            llen = len(list1)
+            if self.stmt[idx1+1] == '=':
+                temp = self.stmt[:idx2+1] + list1 + self.stmt[idx2+1:]
+                self.stmt = copy.deepcopy(temp)
+                prevIdx = self.stmt.index(';',idx2 + llen - 1)
+                length += 4
+            else:
+                # idx1 = self.stmt.index(element,idx2+1)
+                prevIdx = idx2 + llen + 1
+                while self.stmt[idx1] != ';':
+                    # Do nothing
+                    idx1 -= 1
+                list2 = self.getElementFromMemoryList(element,count)
+                llen = len(list2)
+                temp = self.stmt[:idx1+1] + list2 + self.stmt[idx1+1:]
+                self.stmt = copy.deepcopy(temp)
+                length += 4
+            count += 1
+
+
+
+
     def graphColoring(self, k):
         g = self.graph
         stack = []
@@ -354,12 +411,12 @@ class LiveAnalysis:
             self.buildDictionary()
             self.graphGen()
             count += 1
-            ret = self.graphColoring(7)
+            ret = self.graphColoring(2)
             if ret != 0:
-                self.reconstructGraph(self.spill)
+                self.reconstructGraph2(self.spill)
                 self.reset()
             else:
                 break
             if count == 10:
-                print "\nRegister Allocation Failed due to unavailability of required registers.!"
+                print "\nRegister Allocation Failed due to unavailability of required number of registers.!"
                 sys.exit(-1)
