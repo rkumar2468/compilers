@@ -86,7 +86,7 @@ class Print:
         else:
             self.exp.genCode()
         intermediateCode.append('PRINT_END')
-        # intermediateCode.append(';')
+        intermediateCode.append(';')
 
 class Block:
     global intermediateCode
