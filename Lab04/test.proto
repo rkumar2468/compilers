@@ -1,0 +1,62 @@
+while 1
+do
+    x = 1;
+
+x = input();
+y = - x;
+z= input();
+//print (y);
+y = x + - x;
+b = x - x / y *z / 10;
+print (y);
+print (x+x);
+print (x-x);
+print (x+-x);
+print (x*x);
+print (x/x);
+print (x%x);
+print (x&&x);
+print (0&&x);
+print (x||x);
+print (0||x);
+print (x==x);
+print (x==4);
+print (x!=x);
+print (x!=4);
+print (x>x);
+print (x>=x);
+print (x<x);
+print (x<=x);
+print (-x);
+print (!x);
+print (!0);
+z = 100; //remove this
+if (x) then
+  print (10);
+if (!x) then {
+  print (20);
+  z = 1;
+}
+else
+  print (30);
+x = 10;
+y = x;
+z = y;
+a = y;
+b = a;
+d = z;
+while (x>120) do {
+  print (x);
+  x = x-1;
+}
+print (z);
+x = 2;
+if (x) then {
+  if (x) then {
+    if (x-2) then {
+      print (111);
+    } else {
+      print (11);
+    }
+  }
+}
