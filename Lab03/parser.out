@@ -1,0 +1,2099 @@
+Created by PLY version 3.4 (http://www.dabeaz.com/ply)
+
+Grammar
+
+Rule 0     S' -> pgm
+Rule 1     pgm -> stmtseq
+Rule 2     stmtseq -> stmt stmtseq
+Rule 3     stmtseq -> stmt
+Rule 4     stmt -> assign
+Rule 5     stmt -> print
+Rule 6     stmt -> block
+Rule 7     stmt -> if
+Rule 8     stmt -> while
+Rule 9     if -> IF expression THEN stmt ELSE stmt
+Rule 10    if -> IF expression THEN stmt
+Rule 11    while -> WHILE expression DO stmt
+Rule 12    assign -> VAR EQL rhs SEMICOLON
+Rule 13    rhs -> INPUT LPAREN RPAREN
+Rule 14    rhs -> expression
+Rule 15    print -> PRINT LPAREN expression RPAREN SEMICOLON
+Rule 16    block -> LBRACE stmtseq RBRACE
+Rule 17    expression -> MINUS expression
+Rule 18    expression -> NOT expression
+Rule 19    expression -> LPAREN expression RPAREN
+Rule 20    expression -> expression PLUS expression
+Rule 21    expression -> expression MINUS expression
+Rule 22    expression -> expression TIMES expression
+Rule 23    expression -> expression DIVIDE expression
+Rule 24    expression -> expression MOD expression
+Rule 25    expression -> expression BINOR expression
+Rule 26    expression -> expression BINAND expression
+Rule 27    expression -> expression DBLEQL expression
+Rule 28    expression -> expression NOTEQL expression
+Rule 29    expression -> expression LT expression
+Rule 30    expression -> expression LE expression
+Rule 31    expression -> expression GT expression
+Rule 32    expression -> expression GE expression
+Rule 33    expression -> NUMBER
+Rule 34    expression -> VAR
+
+Terminals, with rules where they appear
+
+BINAND               : 26
+BINOR                : 25
+DBLEQL               : 27
+DIVIDE               : 23
+DO                   : 11
+ELSE                 : 9
+EQL                  : 12
+GE                   : 32
+GT                   : 31
+IF                   : 9 10
+INPUT                : 13
+LBRACE               : 16
+LE                   : 30
+LPAREN               : 13 15 19
+LT                   : 29
+MINUS                : 17 21
+MOD                  : 24
+NOT                  : 18
+NOTEQL               : 28
+NUMBER               : 33
+PLUS                 : 20
+PRINT                : 15
+RBRACE               : 16
+RPAREN               : 13 15 19
+SEMICOLON            : 12 15
+THEN                 : 9 10
+TIMES                : 22
+VAR                  : 12 34
+WHILE                : 11
+error                : 
+
+Nonterminals, with rules where they appear
+
+assign               : 4
+block                : 6
+expression           : 9 10 11 14 15 17 18 19 20 20 21 21 22 22 23 23 24 24 25 25 26 26 27 27 28 28 29 29 30 30 31 31 32 32
+if                   : 7
+pgm                  : 0
+print                : 5
+rhs                  : 12
+stmt                 : 2 3 9 9 10 11
+stmtseq              : 1 2 16
+while                : 8
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . pgm
+    (1) pgm -> . stmtseq
+    (2) stmtseq -> . stmt stmtseq
+    (3) stmtseq -> . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    pgm                            shift and go to state 1
+    stmt                           shift and go to state 7
+    stmtseq                        shift and go to state 2
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 1
+
+    (0) S' -> pgm .
+
+
+
+state 2
+
+    (1) pgm -> stmtseq .
+
+    $end            reduce using rule 1 (pgm -> stmtseq .)
+
+
+state 3
+
+    (11) while -> WHILE . expression DO stmt
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 19
+
+state 4
+
+    (15) print -> PRINT . LPAREN expression RPAREN SEMICOLON
+
+    LPAREN          shift and go to state 20
+
+
+state 5
+
+    (7) stmt -> if .
+
+    VAR             reduce using rule 7 (stmt -> if .)
+    PRINT           reduce using rule 7 (stmt -> if .)
+    LBRACE          reduce using rule 7 (stmt -> if .)
+    IF              reduce using rule 7 (stmt -> if .)
+    WHILE           reduce using rule 7 (stmt -> if .)
+    $end            reduce using rule 7 (stmt -> if .)
+    RBRACE          reduce using rule 7 (stmt -> if .)
+    ELSE            reduce using rule 7 (stmt -> if .)
+
+
+state 6
+
+    (5) stmt -> print .
+
+    VAR             reduce using rule 5 (stmt -> print .)
+    PRINT           reduce using rule 5 (stmt -> print .)
+    LBRACE          reduce using rule 5 (stmt -> print .)
+    IF              reduce using rule 5 (stmt -> print .)
+    WHILE           reduce using rule 5 (stmt -> print .)
+    $end            reduce using rule 5 (stmt -> print .)
+    RBRACE          reduce using rule 5 (stmt -> print .)
+    ELSE            reduce using rule 5 (stmt -> print .)
+
+
+state 7
+
+    (2) stmtseq -> stmt . stmtseq
+    (3) stmtseq -> stmt .
+    (2) stmtseq -> . stmt stmtseq
+    (3) stmtseq -> . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    $end            reduce using rule 3 (stmtseq -> stmt .)
+    RBRACE          reduce using rule 3 (stmtseq -> stmt .)
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    stmt                           shift and go to state 7
+    stmtseq                        shift and go to state 21
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 8
+
+    (12) assign -> VAR . EQL rhs SEMICOLON
+
+    EQL             shift and go to state 22
+
+
+state 9
+
+    (9) if -> IF . expression THEN stmt ELSE stmt
+    (10) if -> IF . expression THEN stmt
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 23
+
+state 10
+
+    (16) block -> LBRACE . stmtseq RBRACE
+    (2) stmtseq -> . stmt stmtseq
+    (3) stmtseq -> . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    stmt                           shift and go to state 7
+    stmtseq                        shift and go to state 24
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 11
+
+    (8) stmt -> while .
+
+    VAR             reduce using rule 8 (stmt -> while .)
+    PRINT           reduce using rule 8 (stmt -> while .)
+    LBRACE          reduce using rule 8 (stmt -> while .)
+    IF              reduce using rule 8 (stmt -> while .)
+    WHILE           reduce using rule 8 (stmt -> while .)
+    $end            reduce using rule 8 (stmt -> while .)
+    RBRACE          reduce using rule 8 (stmt -> while .)
+    ELSE            reduce using rule 8 (stmt -> while .)
+
+
+state 12
+
+    (4) stmt -> assign .
+
+    VAR             reduce using rule 4 (stmt -> assign .)
+    PRINT           reduce using rule 4 (stmt -> assign .)
+    LBRACE          reduce using rule 4 (stmt -> assign .)
+    IF              reduce using rule 4 (stmt -> assign .)
+    WHILE           reduce using rule 4 (stmt -> assign .)
+    $end            reduce using rule 4 (stmt -> assign .)
+    RBRACE          reduce using rule 4 (stmt -> assign .)
+    ELSE            reduce using rule 4 (stmt -> assign .)
+
+
+state 13
+
+    (6) stmt -> block .
+
+    VAR             reduce using rule 6 (stmt -> block .)
+    PRINT           reduce using rule 6 (stmt -> block .)
+    LBRACE          reduce using rule 6 (stmt -> block .)
+    IF              reduce using rule 6 (stmt -> block .)
+    WHILE           reduce using rule 6 (stmt -> block .)
+    $end            reduce using rule 6 (stmt -> block .)
+    RBRACE          reduce using rule 6 (stmt -> block .)
+    ELSE            reduce using rule 6 (stmt -> block .)
+
+
+state 14
+
+    (33) expression -> NUMBER .
+
+    PLUS            reduce using rule 33 (expression -> NUMBER .)
+    MINUS           reduce using rule 33 (expression -> NUMBER .)
+    TIMES           reduce using rule 33 (expression -> NUMBER .)
+    DIVIDE          reduce using rule 33 (expression -> NUMBER .)
+    MOD             reduce using rule 33 (expression -> NUMBER .)
+    BINOR           reduce using rule 33 (expression -> NUMBER .)
+    BINAND          reduce using rule 33 (expression -> NUMBER .)
+    DBLEQL          reduce using rule 33 (expression -> NUMBER .)
+    NOTEQL          reduce using rule 33 (expression -> NUMBER .)
+    LT              reduce using rule 33 (expression -> NUMBER .)
+    LE              reduce using rule 33 (expression -> NUMBER .)
+    GT              reduce using rule 33 (expression -> NUMBER .)
+    GE              reduce using rule 33 (expression -> NUMBER .)
+    DO              reduce using rule 33 (expression -> NUMBER .)
+    THEN            reduce using rule 33 (expression -> NUMBER .)
+    RPAREN          reduce using rule 33 (expression -> NUMBER .)
+    SEMICOLON       reduce using rule 33 (expression -> NUMBER .)
+
+
+state 15
+
+    (17) expression -> MINUS . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 25
+
+state 16
+
+    (19) expression -> LPAREN . expression RPAREN
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 26
+
+state 17
+
+    (34) expression -> VAR .
+
+    PLUS            reduce using rule 34 (expression -> VAR .)
+    MINUS           reduce using rule 34 (expression -> VAR .)
+    TIMES           reduce using rule 34 (expression -> VAR .)
+    DIVIDE          reduce using rule 34 (expression -> VAR .)
+    MOD             reduce using rule 34 (expression -> VAR .)
+    BINOR           reduce using rule 34 (expression -> VAR .)
+    BINAND          reduce using rule 34 (expression -> VAR .)
+    DBLEQL          reduce using rule 34 (expression -> VAR .)
+    NOTEQL          reduce using rule 34 (expression -> VAR .)
+    LT              reduce using rule 34 (expression -> VAR .)
+    LE              reduce using rule 34 (expression -> VAR .)
+    GT              reduce using rule 34 (expression -> VAR .)
+    GE              reduce using rule 34 (expression -> VAR .)
+    DO              reduce using rule 34 (expression -> VAR .)
+    THEN            reduce using rule 34 (expression -> VAR .)
+    RPAREN          reduce using rule 34 (expression -> VAR .)
+    SEMICOLON       reduce using rule 34 (expression -> VAR .)
+
+
+state 18
+
+    (18) expression -> NOT . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 27
+
+state 19
+
+    (11) while -> WHILE expression . DO stmt
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    DO              shift and go to state 29
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINOR           shift and go to state 39
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+
+state 20
+
+    (15) print -> PRINT LPAREN . expression RPAREN SEMICOLON
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 42
+
+state 21
+
+    (2) stmtseq -> stmt stmtseq .
+
+    $end            reduce using rule 2 (stmtseq -> stmt stmtseq .)
+    RBRACE          reduce using rule 2 (stmtseq -> stmt stmtseq .)
+
+
+state 22
+
+    (12) assign -> VAR EQL . rhs SEMICOLON
+    (13) rhs -> . INPUT LPAREN RPAREN
+    (14) rhs -> . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    INPUT           shift and go to state 44
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    rhs                            shift and go to state 43
+    expression                     shift and go to state 45
+
+state 23
+
+    (9) if -> IF expression . THEN stmt ELSE stmt
+    (10) if -> IF expression . THEN stmt
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    THEN            shift and go to state 46
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINOR           shift and go to state 39
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+
+state 24
+
+    (16) block -> LBRACE stmtseq . RBRACE
+
+    RBRACE          shift and go to state 47
+
+
+state 25
+
+    (17) expression -> MINUS expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 17 (expression -> MINUS expression .)
+    MINUS           reduce using rule 17 (expression -> MINUS expression .)
+    TIMES           reduce using rule 17 (expression -> MINUS expression .)
+    DIVIDE          reduce using rule 17 (expression -> MINUS expression .)
+    MOD             reduce using rule 17 (expression -> MINUS expression .)
+    BINOR           reduce using rule 17 (expression -> MINUS expression .)
+    BINAND          reduce using rule 17 (expression -> MINUS expression .)
+    DBLEQL          reduce using rule 17 (expression -> MINUS expression .)
+    NOTEQL          reduce using rule 17 (expression -> MINUS expression .)
+    LT              reduce using rule 17 (expression -> MINUS expression .)
+    LE              reduce using rule 17 (expression -> MINUS expression .)
+    GT              reduce using rule 17 (expression -> MINUS expression .)
+    GE              reduce using rule 17 (expression -> MINUS expression .)
+    DO              reduce using rule 17 (expression -> MINUS expression .)
+    THEN            reduce using rule 17 (expression -> MINUS expression .)
+    RPAREN          reduce using rule 17 (expression -> MINUS expression .)
+    SEMICOLON       reduce using rule 17 (expression -> MINUS expression .)
+
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 35 ]
+  ! DIVIDE          [ shift and go to state 32 ]
+  ! MOD             [ shift and go to state 41 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 26
+
+    (19) expression -> LPAREN expression . RPAREN
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    RPAREN          shift and go to state 48
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINOR           shift and go to state 39
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+
+state 27
+
+    (18) expression -> NOT expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 18 (expression -> NOT expression .)
+    MINUS           reduce using rule 18 (expression -> NOT expression .)
+    TIMES           reduce using rule 18 (expression -> NOT expression .)
+    DIVIDE          reduce using rule 18 (expression -> NOT expression .)
+    MOD             reduce using rule 18 (expression -> NOT expression .)
+    BINOR           reduce using rule 18 (expression -> NOT expression .)
+    BINAND          reduce using rule 18 (expression -> NOT expression .)
+    DBLEQL          reduce using rule 18 (expression -> NOT expression .)
+    NOTEQL          reduce using rule 18 (expression -> NOT expression .)
+    LT              reduce using rule 18 (expression -> NOT expression .)
+    LE              reduce using rule 18 (expression -> NOT expression .)
+    GT              reduce using rule 18 (expression -> NOT expression .)
+    GE              reduce using rule 18 (expression -> NOT expression .)
+    DO              reduce using rule 18 (expression -> NOT expression .)
+    THEN            reduce using rule 18 (expression -> NOT expression .)
+    RPAREN          reduce using rule 18 (expression -> NOT expression .)
+    SEMICOLON       reduce using rule 18 (expression -> NOT expression .)
+
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 35 ]
+  ! DIVIDE          [ shift and go to state 32 ]
+  ! MOD             [ shift and go to state 41 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 28
+
+    (26) expression -> expression BINAND . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 49
+
+state 29
+
+    (11) while -> WHILE expression DO . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    stmt                           shift and go to state 50
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 30
+
+    (30) expression -> expression LE . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 51
+
+state 31
+
+    (32) expression -> expression GE . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 52
+
+state 32
+
+    (23) expression -> expression DIVIDE . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 53
+
+state 33
+
+    (29) expression -> expression LT . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 54
+
+state 34
+
+    (28) expression -> expression NOTEQL . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 55
+
+state 35
+
+    (22) expression -> expression TIMES . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 56
+
+state 36
+
+    (31) expression -> expression GT . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 57
+
+state 37
+
+    (20) expression -> expression PLUS . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 58
+
+state 38
+
+    (27) expression -> expression DBLEQL . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 59
+
+state 39
+
+    (25) expression -> expression BINOR . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 60
+
+state 40
+
+    (21) expression -> expression MINUS . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 61
+
+state 41
+
+    (24) expression -> expression MOD . expression
+    (17) expression -> . MINUS expression
+    (18) expression -> . NOT expression
+    (19) expression -> . LPAREN expression RPAREN
+    (20) expression -> . expression PLUS expression
+    (21) expression -> . expression MINUS expression
+    (22) expression -> . expression TIMES expression
+    (23) expression -> . expression DIVIDE expression
+    (24) expression -> . expression MOD expression
+    (25) expression -> . expression BINOR expression
+    (26) expression -> . expression BINAND expression
+    (27) expression -> . expression DBLEQL expression
+    (28) expression -> . expression NOTEQL expression
+    (29) expression -> . expression LT expression
+    (30) expression -> . expression LE expression
+    (31) expression -> . expression GT expression
+    (32) expression -> . expression GE expression
+    (33) expression -> . NUMBER
+    (34) expression -> . VAR
+
+    MINUS           shift and go to state 15
+    NOT             shift and go to state 18
+    LPAREN          shift and go to state 16
+    NUMBER          shift and go to state 14
+    VAR             shift and go to state 17
+
+    expression                     shift and go to state 62
+
+state 42
+
+    (15) print -> PRINT LPAREN expression . RPAREN SEMICOLON
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    RPAREN          shift and go to state 63
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINOR           shift and go to state 39
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+
+state 43
+
+    (12) assign -> VAR EQL rhs . SEMICOLON
+
+    SEMICOLON       shift and go to state 64
+
+
+state 44
+
+    (13) rhs -> INPUT . LPAREN RPAREN
+
+    LPAREN          shift and go to state 65
+
+
+state 45
+
+    (14) rhs -> expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    SEMICOLON       reduce using rule 14 (rhs -> expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINOR           shift and go to state 39
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+
+state 46
+
+    (9) if -> IF expression THEN . stmt ELSE stmt
+    (10) if -> IF expression THEN . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    stmt                           shift and go to state 66
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 47
+
+    (16) block -> LBRACE stmtseq RBRACE .
+
+    VAR             reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    PRINT           reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    LBRACE          reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    IF              reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    WHILE           reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    $end            reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    RBRACE          reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+    ELSE            reduce using rule 16 (block -> LBRACE stmtseq RBRACE .)
+
+
+state 48
+
+    (19) expression -> LPAREN expression RPAREN .
+
+    PLUS            reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    MINUS           reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    TIMES           reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    DIVIDE          reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    MOD             reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    BINOR           reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    BINAND          reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    DBLEQL          reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    NOTEQL          reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    LT              reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    LE              reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    GT              reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    GE              reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    DO              reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    THEN            reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    RPAREN          reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+    SEMICOLON       reduce using rule 19 (expression -> LPAREN expression RPAREN .)
+
+
+state 49
+
+    (26) expression -> expression BINAND expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 26 (expression -> expression BINAND expression .)
+    BINAND          reduce using rule 26 (expression -> expression BINAND expression .)
+    DO              reduce using rule 26 (expression -> expression BINAND expression .)
+    THEN            reduce using rule 26 (expression -> expression BINAND expression .)
+    RPAREN          reduce using rule 26 (expression -> expression BINAND expression .)
+    SEMICOLON       reduce using rule 26 (expression -> expression BINAND expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+  ! PLUS            [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! MINUS           [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! TIMES           [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! DIVIDE          [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! MOD             [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! DBLEQL          [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! NOTEQL          [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! LT              [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! LE              [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! GT              [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! GE              [ reduce using rule 26 (expression -> expression BINAND expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+
+
+state 50
+
+    (11) while -> WHILE expression DO stmt .
+
+    VAR             reduce using rule 11 (while -> WHILE expression DO stmt .)
+    PRINT           reduce using rule 11 (while -> WHILE expression DO stmt .)
+    LBRACE          reduce using rule 11 (while -> WHILE expression DO stmt .)
+    IF              reduce using rule 11 (while -> WHILE expression DO stmt .)
+    WHILE           reduce using rule 11 (while -> WHILE expression DO stmt .)
+    RBRACE          reduce using rule 11 (while -> WHILE expression DO stmt .)
+    $end            reduce using rule 11 (while -> WHILE expression DO stmt .)
+    ELSE            reduce using rule 11 (while -> WHILE expression DO stmt .)
+
+
+state 51
+
+    (30) expression -> expression LE expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 30 (expression -> expression LE expression .)
+    BINAND          reduce using rule 30 (expression -> expression LE expression .)
+    DBLEQL          reduce using rule 30 (expression -> expression LE expression .)
+    NOTEQL          reduce using rule 30 (expression -> expression LE expression .)
+    LT              reduce using rule 30 (expression -> expression LE expression .)
+    LE              reduce using rule 30 (expression -> expression LE expression .)
+    GT              reduce using rule 30 (expression -> expression LE expression .)
+    GE              reduce using rule 30 (expression -> expression LE expression .)
+    DO              reduce using rule 30 (expression -> expression LE expression .)
+    THEN            reduce using rule 30 (expression -> expression LE expression .)
+    RPAREN          reduce using rule 30 (expression -> expression LE expression .)
+    SEMICOLON       reduce using rule 30 (expression -> expression LE expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 30 (expression -> expression LE expression .) ]
+  ! MINUS           [ reduce using rule 30 (expression -> expression LE expression .) ]
+  ! TIMES           [ reduce using rule 30 (expression -> expression LE expression .) ]
+  ! DIVIDE          [ reduce using rule 30 (expression -> expression LE expression .) ]
+  ! MOD             [ reduce using rule 30 (expression -> expression LE expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 52
+
+    (32) expression -> expression GE expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 32 (expression -> expression GE expression .)
+    BINAND          reduce using rule 32 (expression -> expression GE expression .)
+    DBLEQL          reduce using rule 32 (expression -> expression GE expression .)
+    NOTEQL          reduce using rule 32 (expression -> expression GE expression .)
+    LT              reduce using rule 32 (expression -> expression GE expression .)
+    LE              reduce using rule 32 (expression -> expression GE expression .)
+    GT              reduce using rule 32 (expression -> expression GE expression .)
+    GE              reduce using rule 32 (expression -> expression GE expression .)
+    DO              reduce using rule 32 (expression -> expression GE expression .)
+    THEN            reduce using rule 32 (expression -> expression GE expression .)
+    RPAREN          reduce using rule 32 (expression -> expression GE expression .)
+    SEMICOLON       reduce using rule 32 (expression -> expression GE expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 32 (expression -> expression GE expression .) ]
+  ! MINUS           [ reduce using rule 32 (expression -> expression GE expression .) ]
+  ! TIMES           [ reduce using rule 32 (expression -> expression GE expression .) ]
+  ! DIVIDE          [ reduce using rule 32 (expression -> expression GE expression .) ]
+  ! MOD             [ reduce using rule 32 (expression -> expression GE expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 53
+
+    (23) expression -> expression DIVIDE expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 23 (expression -> expression DIVIDE expression .)
+    MINUS           reduce using rule 23 (expression -> expression DIVIDE expression .)
+    TIMES           reduce using rule 23 (expression -> expression DIVIDE expression .)
+    DIVIDE          reduce using rule 23 (expression -> expression DIVIDE expression .)
+    MOD             reduce using rule 23 (expression -> expression DIVIDE expression .)
+    BINOR           reduce using rule 23 (expression -> expression DIVIDE expression .)
+    BINAND          reduce using rule 23 (expression -> expression DIVIDE expression .)
+    DBLEQL          reduce using rule 23 (expression -> expression DIVIDE expression .)
+    NOTEQL          reduce using rule 23 (expression -> expression DIVIDE expression .)
+    LT              reduce using rule 23 (expression -> expression DIVIDE expression .)
+    LE              reduce using rule 23 (expression -> expression DIVIDE expression .)
+    GT              reduce using rule 23 (expression -> expression DIVIDE expression .)
+    GE              reduce using rule 23 (expression -> expression DIVIDE expression .)
+    DO              reduce using rule 23 (expression -> expression DIVIDE expression .)
+    THEN            reduce using rule 23 (expression -> expression DIVIDE expression .)
+    RPAREN          reduce using rule 23 (expression -> expression DIVIDE expression .)
+    SEMICOLON       reduce using rule 23 (expression -> expression DIVIDE expression .)
+
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 35 ]
+  ! DIVIDE          [ shift and go to state 32 ]
+  ! MOD             [ shift and go to state 41 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 54
+
+    (29) expression -> expression LT expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 29 (expression -> expression LT expression .)
+    BINAND          reduce using rule 29 (expression -> expression LT expression .)
+    DBLEQL          reduce using rule 29 (expression -> expression LT expression .)
+    NOTEQL          reduce using rule 29 (expression -> expression LT expression .)
+    LT              reduce using rule 29 (expression -> expression LT expression .)
+    LE              reduce using rule 29 (expression -> expression LT expression .)
+    GT              reduce using rule 29 (expression -> expression LT expression .)
+    GE              reduce using rule 29 (expression -> expression LT expression .)
+    DO              reduce using rule 29 (expression -> expression LT expression .)
+    THEN            reduce using rule 29 (expression -> expression LT expression .)
+    RPAREN          reduce using rule 29 (expression -> expression LT expression .)
+    SEMICOLON       reduce using rule 29 (expression -> expression LT expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 29 (expression -> expression LT expression .) ]
+  ! MINUS           [ reduce using rule 29 (expression -> expression LT expression .) ]
+  ! TIMES           [ reduce using rule 29 (expression -> expression LT expression .) ]
+  ! DIVIDE          [ reduce using rule 29 (expression -> expression LT expression .) ]
+  ! MOD             [ reduce using rule 29 (expression -> expression LT expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 55
+
+    (28) expression -> expression NOTEQL expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 28 (expression -> expression NOTEQL expression .)
+    BINAND          reduce using rule 28 (expression -> expression NOTEQL expression .)
+    DBLEQL          reduce using rule 28 (expression -> expression NOTEQL expression .)
+    NOTEQL          reduce using rule 28 (expression -> expression NOTEQL expression .)
+    LT              reduce using rule 28 (expression -> expression NOTEQL expression .)
+    LE              reduce using rule 28 (expression -> expression NOTEQL expression .)
+    GT              reduce using rule 28 (expression -> expression NOTEQL expression .)
+    GE              reduce using rule 28 (expression -> expression NOTEQL expression .)
+    DO              reduce using rule 28 (expression -> expression NOTEQL expression .)
+    THEN            reduce using rule 28 (expression -> expression NOTEQL expression .)
+    RPAREN          reduce using rule 28 (expression -> expression NOTEQL expression .)
+    SEMICOLON       reduce using rule 28 (expression -> expression NOTEQL expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 28 (expression -> expression NOTEQL expression .) ]
+  ! MINUS           [ reduce using rule 28 (expression -> expression NOTEQL expression .) ]
+  ! TIMES           [ reduce using rule 28 (expression -> expression NOTEQL expression .) ]
+  ! DIVIDE          [ reduce using rule 28 (expression -> expression NOTEQL expression .) ]
+  ! MOD             [ reduce using rule 28 (expression -> expression NOTEQL expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 56
+
+    (22) expression -> expression TIMES expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 22 (expression -> expression TIMES expression .)
+    MINUS           reduce using rule 22 (expression -> expression TIMES expression .)
+    TIMES           reduce using rule 22 (expression -> expression TIMES expression .)
+    DIVIDE          reduce using rule 22 (expression -> expression TIMES expression .)
+    MOD             reduce using rule 22 (expression -> expression TIMES expression .)
+    BINOR           reduce using rule 22 (expression -> expression TIMES expression .)
+    BINAND          reduce using rule 22 (expression -> expression TIMES expression .)
+    DBLEQL          reduce using rule 22 (expression -> expression TIMES expression .)
+    NOTEQL          reduce using rule 22 (expression -> expression TIMES expression .)
+    LT              reduce using rule 22 (expression -> expression TIMES expression .)
+    LE              reduce using rule 22 (expression -> expression TIMES expression .)
+    GT              reduce using rule 22 (expression -> expression TIMES expression .)
+    GE              reduce using rule 22 (expression -> expression TIMES expression .)
+    DO              reduce using rule 22 (expression -> expression TIMES expression .)
+    THEN            reduce using rule 22 (expression -> expression TIMES expression .)
+    RPAREN          reduce using rule 22 (expression -> expression TIMES expression .)
+    SEMICOLON       reduce using rule 22 (expression -> expression TIMES expression .)
+
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 35 ]
+  ! DIVIDE          [ shift and go to state 32 ]
+  ! MOD             [ shift and go to state 41 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 57
+
+    (31) expression -> expression GT expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 31 (expression -> expression GT expression .)
+    BINAND          reduce using rule 31 (expression -> expression GT expression .)
+    DBLEQL          reduce using rule 31 (expression -> expression GT expression .)
+    NOTEQL          reduce using rule 31 (expression -> expression GT expression .)
+    LT              reduce using rule 31 (expression -> expression GT expression .)
+    LE              reduce using rule 31 (expression -> expression GT expression .)
+    GT              reduce using rule 31 (expression -> expression GT expression .)
+    GE              reduce using rule 31 (expression -> expression GT expression .)
+    DO              reduce using rule 31 (expression -> expression GT expression .)
+    THEN            reduce using rule 31 (expression -> expression GT expression .)
+    RPAREN          reduce using rule 31 (expression -> expression GT expression .)
+    SEMICOLON       reduce using rule 31 (expression -> expression GT expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 31 (expression -> expression GT expression .) ]
+  ! MINUS           [ reduce using rule 31 (expression -> expression GT expression .) ]
+  ! TIMES           [ reduce using rule 31 (expression -> expression GT expression .) ]
+  ! DIVIDE          [ reduce using rule 31 (expression -> expression GT expression .) ]
+  ! MOD             [ reduce using rule 31 (expression -> expression GT expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 58
+
+    (20) expression -> expression PLUS expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 20 (expression -> expression PLUS expression .)
+    MINUS           reduce using rule 20 (expression -> expression PLUS expression .)
+    BINOR           reduce using rule 20 (expression -> expression PLUS expression .)
+    BINAND          reduce using rule 20 (expression -> expression PLUS expression .)
+    DBLEQL          reduce using rule 20 (expression -> expression PLUS expression .)
+    NOTEQL          reduce using rule 20 (expression -> expression PLUS expression .)
+    LT              reduce using rule 20 (expression -> expression PLUS expression .)
+    LE              reduce using rule 20 (expression -> expression PLUS expression .)
+    GT              reduce using rule 20 (expression -> expression PLUS expression .)
+    GE              reduce using rule 20 (expression -> expression PLUS expression .)
+    DO              reduce using rule 20 (expression -> expression PLUS expression .)
+    THEN            reduce using rule 20 (expression -> expression PLUS expression .)
+    RPAREN          reduce using rule 20 (expression -> expression PLUS expression .)
+    SEMICOLON       reduce using rule 20 (expression -> expression PLUS expression .)
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! TIMES           [ reduce using rule 20 (expression -> expression PLUS expression .) ]
+  ! DIVIDE          [ reduce using rule 20 (expression -> expression PLUS expression .) ]
+  ! MOD             [ reduce using rule 20 (expression -> expression PLUS expression .) ]
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 59
+
+    (27) expression -> expression DBLEQL expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 27 (expression -> expression DBLEQL expression .)
+    BINAND          reduce using rule 27 (expression -> expression DBLEQL expression .)
+    DBLEQL          reduce using rule 27 (expression -> expression DBLEQL expression .)
+    NOTEQL          reduce using rule 27 (expression -> expression DBLEQL expression .)
+    LT              reduce using rule 27 (expression -> expression DBLEQL expression .)
+    LE              reduce using rule 27 (expression -> expression DBLEQL expression .)
+    GT              reduce using rule 27 (expression -> expression DBLEQL expression .)
+    GE              reduce using rule 27 (expression -> expression DBLEQL expression .)
+    DO              reduce using rule 27 (expression -> expression DBLEQL expression .)
+    THEN            reduce using rule 27 (expression -> expression DBLEQL expression .)
+    RPAREN          reduce using rule 27 (expression -> expression DBLEQL expression .)
+    SEMICOLON       reduce using rule 27 (expression -> expression DBLEQL expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! PLUS            [ reduce using rule 27 (expression -> expression DBLEQL expression .) ]
+  ! MINUS           [ reduce using rule 27 (expression -> expression DBLEQL expression .) ]
+  ! TIMES           [ reduce using rule 27 (expression -> expression DBLEQL expression .) ]
+  ! DIVIDE          [ reduce using rule 27 (expression -> expression DBLEQL expression .) ]
+  ! MOD             [ reduce using rule 27 (expression -> expression DBLEQL expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 60
+
+    (25) expression -> expression BINOR expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    BINOR           reduce using rule 25 (expression -> expression BINOR expression .)
+    DO              reduce using rule 25 (expression -> expression BINOR expression .)
+    THEN            reduce using rule 25 (expression -> expression BINOR expression .)
+    RPAREN          reduce using rule 25 (expression -> expression BINOR expression .)
+    SEMICOLON       reduce using rule 25 (expression -> expression BINOR expression .)
+    PLUS            shift and go to state 37
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+    BINAND          shift and go to state 28
+    DBLEQL          shift and go to state 38
+    NOTEQL          shift and go to state 34
+    LT              shift and go to state 33
+    LE              shift and go to state 30
+    GT              shift and go to state 36
+    GE              shift and go to state 31
+
+  ! PLUS            [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! MINUS           [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! TIMES           [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! DIVIDE          [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! MOD             [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! BINAND          [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! DBLEQL          [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! NOTEQL          [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! LT              [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! LE              [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! GT              [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! GE              [ reduce using rule 25 (expression -> expression BINOR expression .) ]
+  ! BINOR           [ shift and go to state 39 ]
+
+
+state 61
+
+    (21) expression -> expression MINUS expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 21 (expression -> expression MINUS expression .)
+    MINUS           reduce using rule 21 (expression -> expression MINUS expression .)
+    BINOR           reduce using rule 21 (expression -> expression MINUS expression .)
+    BINAND          reduce using rule 21 (expression -> expression MINUS expression .)
+    DBLEQL          reduce using rule 21 (expression -> expression MINUS expression .)
+    NOTEQL          reduce using rule 21 (expression -> expression MINUS expression .)
+    LT              reduce using rule 21 (expression -> expression MINUS expression .)
+    LE              reduce using rule 21 (expression -> expression MINUS expression .)
+    GT              reduce using rule 21 (expression -> expression MINUS expression .)
+    GE              reduce using rule 21 (expression -> expression MINUS expression .)
+    DO              reduce using rule 21 (expression -> expression MINUS expression .)
+    THEN            reduce using rule 21 (expression -> expression MINUS expression .)
+    RPAREN          reduce using rule 21 (expression -> expression MINUS expression .)
+    SEMICOLON       reduce using rule 21 (expression -> expression MINUS expression .)
+    TIMES           shift and go to state 35
+    DIVIDE          shift and go to state 32
+    MOD             shift and go to state 41
+
+  ! TIMES           [ reduce using rule 21 (expression -> expression MINUS expression .) ]
+  ! DIVIDE          [ reduce using rule 21 (expression -> expression MINUS expression .) ]
+  ! MOD             [ reduce using rule 21 (expression -> expression MINUS expression .) ]
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 62
+
+    (24) expression -> expression MOD expression .
+    (20) expression -> expression . PLUS expression
+    (21) expression -> expression . MINUS expression
+    (22) expression -> expression . TIMES expression
+    (23) expression -> expression . DIVIDE expression
+    (24) expression -> expression . MOD expression
+    (25) expression -> expression . BINOR expression
+    (26) expression -> expression . BINAND expression
+    (27) expression -> expression . DBLEQL expression
+    (28) expression -> expression . NOTEQL expression
+    (29) expression -> expression . LT expression
+    (30) expression -> expression . LE expression
+    (31) expression -> expression . GT expression
+    (32) expression -> expression . GE expression
+
+    PLUS            reduce using rule 24 (expression -> expression MOD expression .)
+    MINUS           reduce using rule 24 (expression -> expression MOD expression .)
+    TIMES           reduce using rule 24 (expression -> expression MOD expression .)
+    DIVIDE          reduce using rule 24 (expression -> expression MOD expression .)
+    MOD             reduce using rule 24 (expression -> expression MOD expression .)
+    BINOR           reduce using rule 24 (expression -> expression MOD expression .)
+    BINAND          reduce using rule 24 (expression -> expression MOD expression .)
+    DBLEQL          reduce using rule 24 (expression -> expression MOD expression .)
+    NOTEQL          reduce using rule 24 (expression -> expression MOD expression .)
+    LT              reduce using rule 24 (expression -> expression MOD expression .)
+    LE              reduce using rule 24 (expression -> expression MOD expression .)
+    GT              reduce using rule 24 (expression -> expression MOD expression .)
+    GE              reduce using rule 24 (expression -> expression MOD expression .)
+    DO              reduce using rule 24 (expression -> expression MOD expression .)
+    THEN            reduce using rule 24 (expression -> expression MOD expression .)
+    RPAREN          reduce using rule 24 (expression -> expression MOD expression .)
+    SEMICOLON       reduce using rule 24 (expression -> expression MOD expression .)
+
+  ! PLUS            [ shift and go to state 37 ]
+  ! MINUS           [ shift and go to state 40 ]
+  ! TIMES           [ shift and go to state 35 ]
+  ! DIVIDE          [ shift and go to state 32 ]
+  ! MOD             [ shift and go to state 41 ]
+  ! BINOR           [ shift and go to state 39 ]
+  ! BINAND          [ shift and go to state 28 ]
+  ! DBLEQL          [ shift and go to state 38 ]
+  ! NOTEQL          [ shift and go to state 34 ]
+  ! LT              [ shift and go to state 33 ]
+  ! LE              [ shift and go to state 30 ]
+  ! GT              [ shift and go to state 36 ]
+  ! GE              [ shift and go to state 31 ]
+
+
+state 63
+
+    (15) print -> PRINT LPAREN expression RPAREN . SEMICOLON
+
+    SEMICOLON       shift and go to state 67
+
+
+state 64
+
+    (12) assign -> VAR EQL rhs SEMICOLON .
+
+    VAR             reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    PRINT           reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    LBRACE          reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    IF              reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    WHILE           reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    $end            reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    RBRACE          reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+    ELSE            reduce using rule 12 (assign -> VAR EQL rhs SEMICOLON .)
+
+
+state 65
+
+    (13) rhs -> INPUT LPAREN . RPAREN
+
+    RPAREN          shift and go to state 68
+
+
+state 66
+
+    (9) if -> IF expression THEN stmt . ELSE stmt
+    (10) if -> IF expression THEN stmt .
+
+  ! shift/reduce conflict for ELSE resolved as shift
+    ELSE            shift and go to state 69
+    VAR             reduce using rule 10 (if -> IF expression THEN stmt .)
+    PRINT           reduce using rule 10 (if -> IF expression THEN stmt .)
+    LBRACE          reduce using rule 10 (if -> IF expression THEN stmt .)
+    IF              reduce using rule 10 (if -> IF expression THEN stmt .)
+    WHILE           reduce using rule 10 (if -> IF expression THEN stmt .)
+    $end            reduce using rule 10 (if -> IF expression THEN stmt .)
+    RBRACE          reduce using rule 10 (if -> IF expression THEN stmt .)
+
+  ! ELSE            [ reduce using rule 10 (if -> IF expression THEN stmt .) ]
+
+
+state 67
+
+    (15) print -> PRINT LPAREN expression RPAREN SEMICOLON .
+
+    VAR             reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    PRINT           reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    LBRACE          reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    IF              reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    WHILE           reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    $end            reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    RBRACE          reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+    ELSE            reduce using rule 15 (print -> PRINT LPAREN expression RPAREN SEMICOLON .)
+
+
+state 68
+
+    (13) rhs -> INPUT LPAREN RPAREN .
+
+    SEMICOLON       reduce using rule 13 (rhs -> INPUT LPAREN RPAREN .)
+
+
+state 69
+
+    (9) if -> IF expression THEN stmt ELSE . stmt
+    (4) stmt -> . assign
+    (5) stmt -> . print
+    (6) stmt -> . block
+    (7) stmt -> . if
+    (8) stmt -> . while
+    (12) assign -> . VAR EQL rhs SEMICOLON
+    (15) print -> . PRINT LPAREN expression RPAREN SEMICOLON
+    (16) block -> . LBRACE stmtseq RBRACE
+    (9) if -> . IF expression THEN stmt ELSE stmt
+    (10) if -> . IF expression THEN stmt
+    (11) while -> . WHILE expression DO stmt
+
+    VAR             shift and go to state 8
+    PRINT           shift and go to state 4
+    LBRACE          shift and go to state 10
+    IF              shift and go to state 9
+    WHILE           shift and go to state 3
+
+    stmt                           shift and go to state 70
+    while                          shift and go to state 11
+    print                          shift and go to state 6
+    assign                         shift and go to state 12
+    block                          shift and go to state 13
+    if                             shift and go to state 5
+
+state 70
+
+    (9) if -> IF expression THEN stmt ELSE stmt .
+
+    VAR             reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    PRINT           reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    LBRACE          reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    IF              reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    WHILE           reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    $end            reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    RBRACE          reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+    ELSE            reduce using rule 9 (if -> IF expression THEN stmt ELSE stmt .)
+
+WARNING: 
+WARNING: Conflicts:
+WARNING: 
+WARNING: shift/reduce conflict for ELSE in state 66 resolved as shift

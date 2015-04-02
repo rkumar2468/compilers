@@ -65,6 +65,7 @@ if __name__ == '__main__':
     live = liveanalysis.LiveAnalysis(Parser.intermediateCode)
     live.run()
     print live.allocReg
+    print live.Dict
 
     asmfile = fileName.split('.')[0]+'.asm'
     removeVariables = []

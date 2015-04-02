@@ -207,4 +207,3 @@ class LiveAnalysis:
             if count == 10:
                 print "\nRegister Allocation Failed due to unavailability of required registers.!"
                 sys.exit(-1)
-

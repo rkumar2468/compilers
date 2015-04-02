@@ -32,6 +32,7 @@ class LiveAnalysis:
         self.variables = sets.Set([])
         self.lineno = 0
         self.graph = {}
+        self.unaryOps = ['-', '!']
 
     def reset(self):
         self.spill = ''
@@ -181,6 +182,7 @@ class LiveAnalysis:
         # return
         for key in self.Dict.keys():
             list = self.Dict[key]
+            # print "Line ", list
             # if len(list) <=0:
             #     continue
             if len(list) > 1 and list[1] == '=':
@@ -194,8 +196,7 @@ class LiveAnalysis:
                         elif 'BINARY' in val:
                             continue
                         else:
-                            self.Use.append(val)
-
+                             self.Use.append(val)
             elif len(list) > 0 and self.Dict[key][0] == 'print':
                 ## Update use variable ##
                 for val in list[1:]:
@@ -225,10 +226,16 @@ class LiveAnalysis:
                             else:
                                 self.Use.append(val)
 
-            # print "Data :", list, self.Def, self.Use
             # At each line we computed the Use, Defined lists.
+            ## Removing 'Memory' entries from Def and Use ##
+            if 'memory' in self.Def:
+                self.Def.remove('memory')
+            if 'memory' in self.Use:
+                self.Use.remove('memory')
+
             self.variables = self.variables.union(sets.Set(self.Def))
             self.variables = self.variables.union(sets.Set(self.Use))
+            # print self.variables, "      Variales"
             self.defDict[key] = self.Def
             self.useDict[key] = self.Use
             self.Def = []
@@ -262,7 +269,9 @@ class LiveAnalysis:
             if tempInDict == self.inDict:
                 break
 
-        # print "In Dict: ", self.inDict
+        for i in range(self.lineno):
+            print "Line: ", self.Dict[i], " In: ", self.inDict[i], " Def : ", self.useDict[i]
+        # print "In Dict: ", self.inDict[]
         # print "Out Dict: ", self.outDict
         # print variables
 
@@ -336,28 +345,46 @@ class LiveAnalysis:
             return j
 
     def getAssignmentList(self, element, n):
-        return ['memory', '=', element+str(n),';']
+        return ['memory', '=', element,';']
 
     def getElementFromMemoryList(self, element, n):
-        return [element+str(n),'=','memory',';']
+        return [element,'=','memory',';']
+
+    def checkForUnaryElement(self, stmt, prevIdx, element):
+        ret = -1
+        str = 'UNARY '
+        for i in self.unaryOps:
+            if str+i+element in stmt[prevIdx:]:
+                minIdx = stmt.index(str+i+element, prevIdx)
+                if ret == -1:
+                    ret = minIdx
+                else:
+                    ret = min(ret, minIdx)
+                # break
+        return ret
 
     def reconstructGraph2(self, element):
         count = 1
         length = len(self.stmt)
-        print "Raja:-- ", self.stmt
+        list1 = ['memory', '=', element,';']
+        list2 = [element,'=','memory',';']
         prevIdx = 0
         while prevIdx < length:
             ## Finding the element being defined ##
-            if element not in self.stmt[prevIdx:]:
+            idx1 = 0
+            uidx = self.checkForUnaryElement(self.stmt, prevIdx, element)
+
+            if element not in self.stmt[prevIdx:] and uidx < 0:
                 break
             idx1 = self.stmt.index(element,prevIdx)
-            if not idx1:
-                break
+            if uidx > 0 and idx1 > uidx:
+                idx1 = uidx
+            # if not idx1:
+            #     break
             idx2 = self.stmt.index(';',idx1+1)
             if not idx2:
                 break
             temp = []
-            list1 = self.getAssignmentList(element,count)
             llen = len(list1)
             if self.stmt[idx1+1] == '=':
                 temp = self.stmt[:idx2+1] + list1 + self.stmt[idx2+1:]
@@ -365,20 +392,15 @@ class LiveAnalysis:
                 prevIdx = self.stmt.index(';',idx2 + llen - 1)
                 length += 4
             else:
-                # idx1 = self.stmt.index(element,idx2+1)
                 prevIdx = idx2 + llen + 1
                 while self.stmt[idx1] != ';':
                     # Do nothing
                     idx1 -= 1
-                list2 = self.getElementFromMemoryList(element,count)
                 llen = len(list2)
                 temp = self.stmt[:idx1+1] + list2 + self.stmt[idx1+1:]
                 self.stmt = copy.deepcopy(temp)
                 length += 4
             count += 1
-
-
-
 
     def graphColoring(self, k):
         g = self.graph
@@ -400,7 +422,6 @@ class LiveAnalysis:
             self.allocateRegisters(tempGraph, element, k)
             if element not in self.allocReg.keys():
                 return -1
-
         return 0
 
     # Starts the register allocation algorithm based on the number of registers #
