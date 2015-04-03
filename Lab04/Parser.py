@@ -305,8 +305,10 @@ def p_stmt(p):
     '''stmt : SE SEMICOLON
             | print LPAREN AE RPAREN SEMICOLON
             | LBRACE declseq stmtseq RBRACE
-            | if AE then stmt else stmt
-            | while'''
+            | if
+            | while
+            | for
+            | do_while'''
     p[0] = Statement(p[1])
 
 def p_if(p):
@@ -321,6 +323,11 @@ def p_if(p):
 def p_while(p):
     'while : WHILE expression DO stmt'
     p[0] = WHILE(p[2], p[4])
+
+def p_while(p):
+    'while : WHILE expression DO stmt'
+    p[0] = WHILE(p[2], p[4])
+
 
 def p_assign(p):
     'assign : VAR EQL rhs SEMICOLON'
