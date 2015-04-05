@@ -7,6 +7,7 @@ from lexAndParse import tokens
 intermediateCode = []
 
 ## Classes for each type ##
+## Pgm ##
 class Program:
     global intermediateCode
     def __init__(self, DeclSeq, stmtSeq):
@@ -16,32 +17,96 @@ class Program:
 
     def genCode(self):
         # print 'Program'
+        self.declseq.genCode()
         if self.stmtSeq:
             self.stmtSeq.genCode()
 
-class DeclSeq:
+class DECLSEQ:
     def __init__(self, decl='', declSeq=''):
         self.decl = decl
         self.declseq = declSeq
 
-    # def genCode(self):
-    #     if self.decl:
-    #         if self.declseq:
+    def genCode(self):
+        if self.decl:
+            self.decl.genCode()
+            if self.declseq:
+                self.declseq.genCode()
 
-class Decl:
+class DECL:
+    global intermediateCode
     def __init__(self, type, varlist):
         self.type = type
         self.varlist = varlist
 
-class Type:
+    def genCode(self):
+        # global intermediateCode
+        intermediateCode.append('TYPE '+self.type.genCode())
+        self.varlist.genCode()
+        intermediateCode.append(';')
+
+class TYPE:
     def __init__(self, type):
         self.type = type
 
-class VarList:
-    def __init__(self, var, varlist=''):
+    def genCode(self):
+        return self.type
+
+class VARLIST:
+    global intermediateCode
+    def __init__(self, var, comma='', varlist=''):
         self.var = var
         self.varlist  = varlist
+        self.comma = comma
 
+    def genCode(self):
+        self.var.genCode()
+        if self.comma:
+            intermediateCode.append(self.comma)
+        if self.varlist:
+            self.varlist.genCode()
+        # return ret
+
+class VAR:
+    global intermediateCode
+    def __init__(self, var, dimstar=''):
+        self.var = var
+        self.dimstar  = dimstar
+
+    def genCode(self):
+        intermediateCode.append(self.var)
+        if self.dimstar:
+            self.dimstar.genCode()
+        # return ret
+
+class DIMSTAR:
+    global intermediateCode
+    def __init__(self, lbrac='', rbrac='', dimstar=''):
+        self.lbrac = lbrac
+        self.rbrac = rbrac
+        self.dimstar = dimstar
+
+    def genCode(self):
+        global intermediateCode
+        if self.lbrac and self.rbrac:
+            intermediateCode.append(self.lbrac)
+            intermediateCode.append(self.rbrac)
+        if self.dimstar:
+            self.dimstar.genCode()
+
+class DIMEXPR:
+    global intermediateCode
+    def __init__(self, lbrac, rbrac, exp):
+        self.lbrac = lbrac
+        self.rbrac = rbrac
+        self.exp = exp
+
+    def genCode(self):
+        global intermediateCode
+        intermediateCode.append(self.lbrac)
+        self.exp.genCode()
+        intermediateCode.append(self.rbrac)
+
+## StmtSeq ##
 class Statements:
     global intermediateCode
     def __init__(self, stmt='', stmtSeq=''):
@@ -55,6 +120,7 @@ class Statements:
         if self.stmtSeq:
             self.stmtSeq.genCode()
 
+## Stmt ##
 class Statement:
     global intermediateCode
     def __init__(self, stmt):
@@ -105,7 +171,7 @@ class Print:
     def genCode(self):
         global intermediateCode
         intermediateCode.append('PRINT_START')
-        if self.exp.type == 'variable' or self.exp.type == 'num':
+        if self.exp.exp.type == 'variable' or self.exp.exp.type == 'num':
             intermediateCode.append(self.exp.genCode())
         else:
             self.exp.genCode()
@@ -123,12 +189,15 @@ class Block:
         self.stmtseq.genCode()
 
 class Input:
+    global intermediateCode
     def __init__(self):
         self.type = 'input'
 
     def genCode(self):
         # print "Input Gen Code."
-        return 'input()'
+        intermediateCode.append('input')
+        intermediateCode.append('(')
+        intermediateCode.append(')')
 
 class IF:
     global intermediateCode
@@ -144,7 +213,9 @@ class IF:
         global intermediateCode
         # ret = ''
         intermediateCode.append('BRANCH LABEL_IF')
-        if self.exp.type == 'variable' or self.exp.type == 'num':
+        if (self.exp.type == 'variable' or self.exp.type == 'num') \
+                or\
+            (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
             intermediateCode.append(self.exp.genCode())
             intermediateCode.append(';')
         else:
@@ -154,7 +225,7 @@ class IF:
         # self.exp.genCode() ## x < 10
         self.stmt.genCode()
         intermediateCode.append('BRANCH LABEL_IF_END')
-        # intermediateCode.append(ret)
+        intermediateCode.append(';')
 
 class IFELSE:
     global intermediateCode
@@ -167,7 +238,7 @@ class IFELSE:
     def genCode(self):
         global intermediateCode
         intermediateCode.append('BRANCH LABEL_IF_ELSE')
-        if self.exp.type == 'variable' or self.exp.type == 'num':
+        if (self.exp.type == 'variable' or self.exp.type == 'num') or (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
             intermediateCode.append(self.exp.genCode())
             intermediateCode.append(';')
         else:
@@ -179,6 +250,7 @@ class IFELSE:
         intermediateCode.append(';')
         self.stmt2.genCode()
         intermediateCode.append('BRANCH LABEL_IF_ELSE_END')
+        intermediateCode.append(';')
 
 class WHILE:
     global intermediateCode
@@ -191,7 +263,9 @@ class WHILE:
         # print "While Gen Code."
         global intermediateCode
         intermediateCode.append('BRANCH LABEL_WHILE')
-        if self.exp.type == 'variable' or self.exp.type == 'num':
+        if (self.exp.type == 'variable' or self.exp.type == 'num')\
+                or \
+            (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
             intermediateCode.append(self.exp.genCode())
             intermediateCode.append(';')
         else:
@@ -202,15 +276,63 @@ class WHILE:
         intermediateCode.append('BRANCH LABEL_WHILE_END')
         intermediateCode.append(';')
 
-class RHS:
+## Return Values ##
+class LHS:
     global intermediateCode
-    def __init__(self, exp):
+    def __init__(self, id, lbrac='', exp='', rbrac=''):
+        self.id = id
+        self.lbrac = lbrac
+        self.rbrac = rbrac
         self.exp = exp
-        self.type = 'rhs'
+        self.type = 'lhs'
 
     def genCode(self):
-        return self.exp.genCode()
+        intermediateCode.append(self.id.genCode())
+        if self.lbrac and self.rbrac and self.exp:
+            intermediateCode.append('[')
+            intermediateCode.append(self.exp.genCode())
+            intermediateCode.append(']')
 
+class SEOPT:
+    def __init__(self, se=''):
+        self.se = se
+
+    def genCode(self):
+        if self.se:
+            self.se.genCode()
+
+class AEOPT:
+    global intermediateCode
+    def __init__(self, exp=''):
+        self.exp = exp
+
+    def genCode(self):
+        if self.exp:
+            self.exp.genCode()
+
+## Raj - Should handle pre and post increment/decrement operations ##
+class SE:
+    global intermediateCode
+    def __init__(self, lhs, op='', exp=''):
+        self.lhs = lhs
+        self.exp = exp
+        self.op = op
+        # self.pre = pre
+
+    def genCode(self):
+        intermediateCode.append(self.lhs.genCode())
+        if self.op:
+            intermediateCode.append(self.op)
+        if self.exp:
+            # print self.exp,
+            if self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num'):
+                # if self.pre == 1:
+                intermediateCode.append(self.exp.genCode())
+            else:
+                self.exp.genCode()
+        intermediateCode.append(';')
+
+## Return Values ##
 class Expression:
     global intermediateCode
     def __init__(self, exp):
@@ -220,6 +342,7 @@ class Expression:
     def genCode(self):
         return self.exp.genCode()
 
+## Return Values ##
 class Number:
     global intermediateCode
     def __init__(self, val):
@@ -227,24 +350,38 @@ class Number:
         self.type = 'num'
 
     def genCode(self):
-        # print "Num Gen Code."
+        # intermediateCode.append(self.value)
         return str(self.value)
 
+## No Return values ##
 class Unary_Ops:
     global intermediateCode
-    def __init__(self, operator, operand):
+    def __init__(self, operator, operand, post=0):
         self.op = operator
         self.operand = operand
         self.type = 'uops'
+        self.post= post
 
     def genCode(self):
         global intermediateCode
         # print "Uops Gen Code."
-        ret = 'UNARY '
-        ret += self.op
-        ret += self.operand.genCode()
-        intermediateCode.append(ret)
+        # ret = ''
+        intermediateCode.append('UNARY START')
+        if self.post == 0:
+            intermediateCode.append(self.op)
+            if self.operand.type and self.operand.type == 'ae':
+                self.operand.genCode()
+            else:
+                intermediateCode.append(self.operand.genCode())
+        else:
+            if self.operand.type and self.operand.type == 'ae':
+                self.operand.genCode()
+            else:
+                intermediateCode.append(self.operand.genCode())
+            intermediateCode.append(self.op)
+        intermediateCode.append('UNARY END')
 
+## No Return values ##
 class Bin_Ops:
     global intermediateCode
     def __init__(self, left, operator, right):
@@ -254,26 +391,75 @@ class Bin_Ops:
         self.op = operator
 
     def genCode(self):
-        # print "Bin Ops Gen Code."
         global intermediateCode
         intermediateCode.append('BINARY '+self.op)
-        if self.left.type == 'variable' or self.left.type == 'num':
+        if (self.left.type == 'variable' or self.left.type == 'num')\
+                or \
+            (self.left.type == 'ae' and (self.left.exp.type == 'variable' or self.left.exp.type == 'num')):
             intermediateCode.append(self.left.genCode())
         else:
             self.left.genCode()
         # ret += self.op
-        if self.right.type == 'variable' or self.right.type == 'num':
+        if (self.right.type == 'variable' or self.right.type == 'num')\
+                or \
+            (self.right.type == 'ae' and (self.right.exp.type == 'variable' or self.right.exp.type == 'num')):
             intermediateCode.append(self.right.genCode())
         else:
             self.right.genCode()
 
+## Return Values ##
 class Names:
+    global intermediateCode
     def __init__(self, var):
         self.var = var
         self.type = 'variable'
 
     def genCode(self):
+        # intermediateCode.append(self.var)
         return self.var
+
+## Homework 04 Updates ##
+class FOR:
+    global intermediateCode
+    def __init__(self, arg1, arg2, arg3, arg4):
+        self.seopt1 = arg1
+        self.aeopt = arg2
+        self.seopt2 = arg3
+        self.stmt = arg4
+
+    def genCode(self):
+        # print 'To be implemented.'
+        intermediateCode.append('BRANCH LABEL_FOR')
+        self.seopt1.genCode()
+        # intermediateCode.append(';')
+        self.aeopt.genCode()
+        intermediateCode.append(';')
+        self.seopt2.genCode()
+        # intermediateCode.append(';')
+        self.stmt.genCode()
+        intermediateCode.append('BRANCH LABEL_FOR_END')
+        intermediateCode.append(';')
+
+class DO_WHILE:
+    global intermediateCode
+    def __init__(self, stmt, exp):
+        self.exp = exp
+        self.stmt = stmt
+        self.type = 'do_while'
+
+    def genCode(self):
+        intermediateCode.append('BRANCH LABEL_DO_WHILE')
+        if (self.exp.type == 'variable' or self.exp.type == 'num')\
+                or \
+            (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
+            intermediateCode.append(self.exp.genCode())
+            intermediateCode.append(';')
+        else:
+            self.exp.genCode()
+            intermediateCode.append(';')
+        self.stmt.genCode()
+        intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
+        intermediateCode.append(';')
 
 ## Tracking variables - for static semantic check ##
 names = {}
@@ -293,18 +479,32 @@ def p_start(p):
     'pgm : declseq stmtseq'
     p[0] = Program(p[1], p[2])
 
+def p_declseq(p):
+    '''declseq : decl declseq
+               | '''
+    if len(p) == 3:
+        p[0] = DECLSEQ(p[1], p[2])
+    # else:
+    #     p[0] = DECLSEQ()
+
+def p_decl(p):
+    'decl : type varlist SEMICOLON'
+    if len(p) == 4:
+        p[0] = DECL(p[1], p[2])
+
+
 def p_stmtseq(p):
     '''stmtseq : stmt stmtseq
                | '''
     if len(p) == 3:
         p[0] = Statements(p[1], p[2])
-    else:
-        p[0] = Statements()
+    # else:
+    #     p[0] = Statements()
 
 def p_stmt(p):
     '''stmt : SE SEMICOLON
-            | print LPAREN AE RPAREN SEMICOLON
-            | LBRACE declseq stmtseq RBRACE
+            | print
+            | block
             | if
             | while
             | for
@@ -324,38 +524,111 @@ def p_while(p):
     'while : WHILE expression DO stmt'
     p[0] = WHILE(p[2], p[4])
 
-def p_while(p):
-    'while : WHILE expression DO stmt'
-    p[0] = WHILE(p[2], p[4])
+def p_do_while(p):
+    'do_while : DO stmt WHILE expression SEMICOLON'
+    p[0] = DO_WHILE(p[2], p[4])
 
+def p_for(p):
+    'for : FOR LPAREN SEOpt SEMICOLON AEOpt SEMICOLON SEOpt RPAREN stmt'
+    p[0] = FOR(p[3], p[5], p[7], p[9])
 
-def p_assign(p):
-    'assign : VAR EQL rhs SEMICOLON'
-    # pass
-    # p[0] = Assignment(p[1], p[3])
-    names[p[1]] = p[3]
-    p[0] = Assignment(Names(p[1]), p[3])
-    # p[0] = '(' + str(p[1]) + '=(' + str(p[3]) + '))'
+def p_seopt(p):
+    '''SEOpt : SE
+            | '''
+    if len(p) == 2:
+        p[0] = SEOPT(p[1])
+    # else:
+    #     p[0] = SEOPT()
 
-def p_rhs(p):
-    '''rhs : INPUT LPAREN RPAREN
-           | expression'''
-    if p[1] == 'input':
-        print  p[0], "  ", p[1]
-        p[0] = Input()
-        # p[0] = '(input())'
+def p_aeopt(p):
+    '''AEOpt : expression
+            | '''
+    if len(p) == 2:
+        p[0] = AEOPT(p[1])
+    # else:
+    #     p[0] = AEOPT()
+
+def p_type(p):
+    '''type : INT
+           | BOOL'''
+    p[0] = TYPE(p[1])
+
+def p_varlist(p):
+    '''varlist : var COMMA varlist
+              | var'''
+    if len(p) == 4:
+        p[0] = VARLIST(p[1], p[2], p[3])
+    elif len(p) == 2:
+        p[0] = VARLIST(p[1])
+
+def p_var(p):
+    'var : ID dimstar'
+    p[0] = VAR(p[1], p[2])
+
+def p_se(p):
+    '''SE : lhs EQL expression
+          | prepost'''
+    if len(p) == 4:
+        ## = operation ##
+        p[0] = SE(p[1], p[2], Expression(p[3]))
     else:
-        # print len(p)
+        p[0] = SE(p[1])
+
+def p_unaryPrePost(p):
+    '''prepost : lhs PLUSPLUS
+               | lhs MINUSMINUS
+               | PLUSPLUS lhs
+               | MINUSMINUS lhs'''
+    if p[1] == '\+\+' or p[1] == '--':
+        ## Pre ##
+        p[0] = Unary_Ops(p[1], LHS(p[2]), 0)
+    else:
+        ## Post ##
+        p[0] = Unary_Ops(p[2], LHS(p[1]), 1)
+
+def p_lhs(p):
+    'lhs : lhs LSQUAREBRACE expression RSQUAREBRACE'
+    names[p[1]] = p[3]
+    p[0] = LHS(p[1], p[3])
+
+def p_expression(p):
+    '''expression : lhs
+                  | SE
+                  | input
+                  | TRUE
+                  | FALSE
+                  | NEW type dimexpr dimstar'''
+    if len(p) == 2:
         p[0] = Expression(p[1])
+    else:
+        p[0] = Expression(p[1], p[2], p[3], p[4])
+
+def p_dimexpr(p):
+    'dimexpr : LSQUAREBRACE expression RSQUAREBRACE'
+    p[0] = DIMEXPR(p[2])
+
+def p_dimstar(p):
+    '''dimstar : LSQUAREBRACE RSQUAREBRACE dimstar
+             | '''
+    if len(p) > 1:
+        if p[4]:
+            p[0] = DIMSTAR(p[1], p[2], p[3])
+        else:
+            p[0] = DIMSTAR(p[1], p[2])
+    else:
+        p[0] = DIMSTAR()
+
+def p_input(p):
+    '''input : INPUT LPAREN RPAREN'''
+    p[0] = Input()
 
 def p_print(p):
     'print : PRINT LPAREN expression RPAREN SEMICOLON'
     p[0] = Print(p[3])
-    # p[0] = '(print(' + str(p[2]) + '))'
 
 def p_block(p):
-    'block : LBRACE stmtseq RBRACE'
-    p[0] = Block(p[2])
+    'block : LBRACE declseq stmtseq RBRACE'
+    p[0] = Block(p[2], p[3])
 
 ## Expressions Parsing ##
 
@@ -390,26 +663,21 @@ def p_expression_binop(p):
                   | expression GT expression
                   | expression GE expression'''
     p[0] = Bin_Ops(p[1], p[2], p[3])
-    # p[0] = '(' + str(p[1]) +  str(p[2]) + str(p[3]) + ')'
 
+## intconst ##
 def p_number(p):
     'expression : NUMBER'
     p[0] = Number(p[1])
-    # p[0] = p[1]
 
-def p_names(p):
-    'expression : VAR'
+## Basic static semantics ##
+def p_id(p):
+    'lhs : ID'
     try:
-        p[0] = names[p[1]]
+        # p[0] = names[p[1]]
         p[0] = Names(p[1])
     except LookupError:
         print("Error: Undefined variable - '%s' at line: %s" % (p[1], p.lexer.lineno))
-        # p[0] = 0
-        ## Static Semantic Check ##
-        ## Exitting on the first error ##
         sys.exit(0)
-        ## Can pass if we wish to not to worry about the syntax errors ##
-        # pass
 
 ## Syntax errors ##
 def p_error(p):
@@ -428,3 +696,4 @@ def run(data):
 
     result.genCode()
     # print "Intermediate Code: ", intermediateCode
+

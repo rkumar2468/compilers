@@ -36,7 +36,7 @@ tokens = [
     'DIVIDE',
     'LPAREN',
     'RPAREN',
-    'VAR',
+    'ID',
     'PLUSPLUS',
     'MINUSMINUS',
     'LSQUAREBRACE',
@@ -91,10 +91,10 @@ t_LSQUAREBRACE = r'\['
 t_RSQUAREBRACE = r'\]'
 t_COMMA        = r','
 
-def t_VAR(t):
+def t_ID(t):
     r'[a-zA-Z][a-zA-Z0-9]*'
-    ## If lookup fails, it returns the default Var type and value ##
-    t.type = reserved.get(t.value, 'VAR')
+    ## If lookup fails, it returns the default variable type and value ##
+    t.type = reserved.get(t.value, 'ID')
     return t
 
 def t_NUMBER(t):

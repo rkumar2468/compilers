@@ -58,7 +58,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     ## Static Semantic Analysis ##
-    # print "Intermediate Code: ", Parser.intermediateCode
+    print "Intermediate Code: ", Parser.intermediateCode
 
     ## Live Analysis ##
     # import liveanalysis
