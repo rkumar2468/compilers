@@ -1,0 +1,36 @@
+int x, y, z, a;
+x = 13;
+y = input();
+z = !x;
+a = -y;
+a = x && y;
+print (x);
+print (y);
+print(z);
+y--;
+--z;
+if (a == x)
+then
+    a = 10;
+
+if 10 + 1
+then
+    a=15 * x + 11;
+else
+    a = 10;
+
+// Check this operation - Very Important //
+while (a&&a+y*x)
+do
+    print (x);
+
+do
+    print (x);
+while(x);
+
+for(x=10;x<11;x++)
+    print (x);
+
+if (!a)
+then
+    print (a);

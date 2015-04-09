@@ -23,6 +23,7 @@ class CodeGen:
         self.ifLabelStack = []
         self.loopLabelStack = []
         self.loop2LabelStack = []
+        self.codeStack = []
 
     def genLabel(self):
         ret = 'LABEL%s' %self.labelCount
@@ -34,25 +35,27 @@ class CodeGen:
             return self.ifLabelStack[-1]
         elif type == 'while':
             return self.loopLabelStack[-1]
+        elif type == 'loop2':
+            return self.loop2LabelStack[-1]
 
     ## Sbrk system call - To Allocate memory ##
     def allocMem(self, bytes):
         return '; ## Allocating Memory ##; li $a0, %s; li $v0, 9; syscall;;' %(bytes)
 
     def generateHeaders(self):
-        self.asmfid.write(" .globl main\n")
-        self.asmfid.write("\n .data\n str4: .asciiz \"\\n\" \n memory: .word 0 1 2 3 4\n")
-        self.asmfid.write("\n .text\n")
+        self.asmfid.write(".globl main\n")
+        self.asmfid.write("\n.data\n   str4: .asciiz \"\\n\" \n   memory: .word 0 1 2 3 4\n   sizes: .word 0 1 2 3 4 5\n\n")
+        self.asmfid.write("\n.text\n")
         self.asmfid.write("main:\n")
 
     def getExit(self):
         return '; ## Exit ##; la $a0, str4; li $v0, 4; syscall;; li $v0, 10; syscall;;'
 
     def inputInt(self):
-        return ';## Reading input from stdin ##; li $v0, 5; syscall;;'
+        return '; ## Reading input from stdin ##;   li $v0, 5;   syscall; ## End of reading Input ##;'
 
     def printInt(self):
-        return '; ## Adding New Line ##; ori $t8, $a0, 0; la $a0, str4; li $v0, 4; syscall;; ## Printing Integer ##; ori $a0, $t8, 0; li $v0, 1; syscall;;'
+        return '; ## Adding New Line ##; ori $t8, $a0, 0; la $a0, str4; li $v0, 4; syscall;; ## Printing Integer ##; ori $a0, $t8, 0; li $v0, 1; syscall; ## End of Print ##;'
 
     def evalBinExp(self, var1, var2, op):
         ret = ''
@@ -373,31 +376,65 @@ class CodeGen:
             reg = '$v0'
         return ret, reg
 
+    def getHeap(self):
+        ## Have to put the size in $a0 prior to this function call ##
+        return '; ## Allocating heap using sbrk system call ##;   li $v0, 9;   syscall; ## End of sbrk syscal ##;'
+
     def evaluateExpression(self, list):
         res = ''
         reg = ''
         print "[CGen:evaluateExpression] List ", list
-        if list[0] == 'input':
+        if len(list) > 1 and list[1] == '=':
+            # if list[2] != 'new':
+            defn = list[0]
+            temp = list[2:]
+            tmp, temp1 = self.evaluateExpression(temp)
+            if tmp:
+                res += tmp
+            if temp1:
+                res +='; ori $%s, %s, 0; ' %(self.allocReg[defn], temp1)
+                reg = temp1
+        elif list[0] == 'input':
             res = self.inputInt()
             reg = '$v0'
         elif re.match('UNARY ', list[0]):
-            if list[0][6] == '!':
-                var = list[0][7:]
+            if list[1] == '!':
+                var = list[2]
                 if re.search('^[0-9]+$', var):
                     res = '; li $t8, %s;' %(var)
                     res += '; seq $t9, $t8, $zero;'
                 else:
                     res = '; ori $t8, $%s, 0;' %(self.allocReg[var])
                     res += '; seq $t9, $t8, $zero;'
+            elif list[1] == '-':
+                var = list[2]
+                if re.search('^[0-9]+$', var):
+                    res = '; li $t8, %s;' %(var)
+                    res += '; sub $t9, $zero, $t8;'
+                else:
+                    res = '; ori $t8, $%s, 0;' %(self.allocReg[var])
+                    res += '; sub $t9, $zero, $t8;'
+            ## Handle Pre and Post ++/-- ##
 
-            elif list[0][6] == '-':
-                var = list[0][7:]
-                if re.search('^[0-9]+$', var):
-                    res = '; li $t8, %s;' %(var)
-                    res += '; sub $t9, $zero, $t8;'
-                else:
-                    res = '; ori $t8, $%s, 0;' %(self.allocReg[var])
-                    res += '; sub $t9, $zero, $t8;'
+            ## Post Operations ##
+            elif list[2] == '--':
+                # print 'To be implemented.!'
+                var = list[1]
+                res = '; li $t9, 1; sub $t8, $%s, $t9; ori $t9, $%s, 0;  ori $%s, $t8, 0;' %(self.allocReg[var],self.allocReg[var],self.allocReg[var])
+            elif list[2] == '++':
+                # print 'To be implemented.!'
+                var = list[1]
+                res = '; li $t9, 1; add $t8, $%s, $t9; ori $t9, $%s, 0;  ori $%s, $t8, 0;' %(self.allocReg[var],self.allocReg[var],self.allocReg[var])
+
+            ## Pre Operations ##
+            elif list[1] == '--':
+                # print 'To be implemented.!'
+                var = list[2]
+                res = '; li $t8, 1; sub $t9, $%s, $t8; ori $%s, $t9, 0;' %(self.allocReg[var],self.allocReg[var])
+            elif list[1] == '++':
+                # print 'To be implemented.!'
+                var = list[2]
+                res = '; li $t8, 1; add $t9, $%s, $t8; ori $%s, $t9, 0;' %(self.allocReg[var],self.allocReg[var])
             reg = '$t9'
         elif re.match('BINARY ', list[0]):
             opers = []
@@ -451,7 +488,21 @@ class CodeGen:
                 res += '; li $t8, %s; ' %list[0]
                 reg = '$t8'
             else:
-                reg = '$'+self.allocReg[list[0]]
+                if '[' not in list and ']' not in list:
+                    reg = '$'+self.allocReg[list[0]]
+                else:
+                    ## Array Reading ##
+                    lbCount = list.count('[')
+                    rbCount = list.count(']')
+                    if lbCount != rbCount:
+                        print "Square brackets are not balanced.!"
+                        sys.exit(-1)
+                    idx  = 0
+                    for i in range(lbCount):
+                        newidx1 = list.index('[', idx)
+                        newidx2 = list.index(']', newidx1)
+                        idx = newidx2
+                        res, reg = self.evaluateExpression(list[newidx1+1:newidx2])
         return res, reg
 
     def getIfLabel(self):
@@ -466,6 +517,7 @@ class CodeGen:
     def generateIntermediateCode(self):
         memcount = 0
         memory = {}
+        forStart = 0
         for key in self.Dict.keys():
             lis = []
             # print "Raa -- ", key, self.Dict[key]
@@ -474,12 +526,19 @@ class CodeGen:
                 continue
             if 'memory' not in val:
                 if len(val) > 1 and val[1] == '=':
-                    defn = val[0]
-                    temp = val[2:]
-                    ret, reg = self.evaluateExpression(temp)
-                    if ret:
-                        lis.append(ret)
-                        lis.append('; ori $%s, %s, 0; ' %(self.allocReg[defn], reg))
+                    if val[2] != 'new':
+                        ret, reg = self.evaluateExpression(val)
+                        if ret:
+                            lis.append(ret)
+                    else:
+                        # print "Array Implementation.!"
+                        ret, reg = self.evaluateExpression(val[5:-1])
+                        if ret:
+                            lis.append(ret)
+                        if reg:
+                            lis.append(';   ori $a0, %s, 0' %reg)
+                            lis.append(self.getHeap())
+
                 elif val[0] == 'print':
                     ret, reg = self.evaluateExpression(val)
                     if ret:
@@ -494,7 +553,10 @@ class CodeGen:
                                 lis.append('; mfhi $a0;')
                         lis.append('; ori $t8, $a0, 0;')
                         lis.append(self.printInt())
-
+                elif len(val) > 2 and (val[1] == '--' or val[1] == '++' or val[2] == '--' or val[2] == '++'):
+                    ret, reg = self.evaluateExpression(val)
+                    if ret:
+                        lis.append(ret)
                 elif val[0] == 'if':
                     label = self.genLabel()
                     self.ifLabelStack.append(label)
@@ -553,6 +615,71 @@ class CodeGen:
                 elif val[0] == 'END_LOOP':
                     lis.append('; beq $zero, $zero, %s' %self.getLoopLabel())
                     lis.append(';%s:;' %self.getLoop2Label())
+
+                ## DO WHILE ##
+                elif val[0] == 'LOOP_DO':
+                    lis.append(';## Do While LOOP ##; ')
+                    label = self.genLabel()
+                    self.loopLabelStack.append(label)
+                    lis.append(';%s:;' %label)
+                elif val[0] == 'END_LOOP_DO':
+                    ret, reg = self.evaluateExpression(val[1:])
+                    if ret:
+                        lis.append(ret)
+                    if reg:
+                        if reg not in ['$HI', '$LO']:
+                            lis.append('; bne %s, $zero, %s; ' %(reg, self.getLoopLabel()))
+                        else:
+                            if reg == '$LO':
+                                lis.append('; mflo $t8;')
+                                lis.append('; bne $t8, $zero, %s; ' %self.getLoopLabel())
+                            else:
+                                lis.append('; mfhi $t8;')
+                                lis.append('; bne $t8, $zero, %s; ' %self.getLoopLabel())
+
+                ## For LOOP ##
+                elif val[0] == 'LOOP_FOR':
+                    lis.append(';## For LOOP ##; ')
+                    label = self.genLabel()
+                    self.loopLabelStack.append(label)
+                    label2 = self.genLabel()
+                    self.loop2LabelStack.append(label2)
+                    lis.append(';%s:;' %label)
+                    if '=' not in val:
+                        ret, reg = self.evaluateExpression(val[1:])
+                        if ret:
+                            lis.append(ret)
+                    else:
+                        eqIdx = val.index('=')
+                        defn = val[eqIdx-1]
+                        ret, reg = self.evaluateExpression(val[eqIdx+1:])
+                        if ret:
+                            lis.append(ret)
+                            lis.append('; ori $%s, %s, 0; ' %(self.allocReg[defn], reg))
+                    forStart = 2
+                elif val[0] == 'END_LOOP_FOR':
+                    lis.append('; beq $zero, $zero, %s' %self.getLoopLabel())
+                    lis.append(';## End of For LOOP ##;')
+                    lis.append(';%s:;' %self.getLoop2Label())
+
+                if forStart > 0 and val[0] != 'LOOP_FOR' and val[0] != 'END_LOOP_FOR':
+                    forStart -= 1
+                    if val:
+                        ret, reg = self.evaluateExpression(val)
+                    if ret:
+                        lis.append(ret)
+                    if forStart == 1:
+                        ## Condition Expression ##
+                        if reg:
+                            if reg not in ['$HI', '$LO']:
+                                lis.append('; beq %s, $zero, %s; ' %(reg, self.peekLabel('loop2')))
+                            else:
+                                if reg == '$LO':
+                                    lis.append('; mflo $t8;')
+                                    lis.append('; beq $t8, $zero, %s; ' %self.peekLabel('loop2'))
+                                else:
+                                    lis.append('; mfhi $t8;')
+                                    lis.append('; beq $t8, $zero, %s; ' %self.peekLabel('loop2'))
             else:
                 ## It is either X = memory or memory = x ##
                 if val[0] == 'memory':

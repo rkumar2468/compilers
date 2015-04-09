@@ -15,6 +15,7 @@ class LiveAnalysis:
     def __init__(self, stmt):
         self.stmt = stmt
         self.math = ['+','-','*','/','%','&&','||','!', '==', '!=', '<', '>', '<=', '>=']
+        self.umath = ['++', '--', '!', '-']
         self.registers = ['t0', 't1', 't2', 't3', 't4', 't5', 't6', 't7']
         self.allocReg = {}
         self.spill = ''
@@ -33,6 +34,107 @@ class LiveAnalysis:
         self.lineno = 0
         self.graph = {}
         self.unaryOps = ['-', '!']
+        self.types = {}
+        self.symbols = ['new', 'int', 'bool', '[', ']']
+
+    def checkIfVarDeclared(self, var, varList):
+        ret = 0
+        length = len(varList)
+        for i in range(length):
+            curr = varList[length - i - 1]
+            if var in curr.keys():
+                return 1
+        return ret
+
+    def removeUnnecessaryItems(self):
+        newStmt = []
+        # bend = 0
+        prev = ''
+        declStart = 0
+        for x in self.stmt:
+            if x == None:
+                continue
+            if x == 'BLOCK_END':
+                # bend = 1
+                continue
+            elif declStart == 1:
+                if x == ';':
+                    declStart = 0
+            elif x != 'BLOCK_START'  and prev != x and declStart == 0:
+                if 'TYPE' in x:
+                    declStart = 1
+                else:
+                    newStmt.append(x)
+                if x == ';':
+                    prev = x
+                else:
+                    prev = ''
+                # bend = 0
+        return newStmt
+
+    def staticSemanticCheck(self):
+        print 'Intermediate Code: ',self.stmt
+        ## Static Semantic Check ##
+        type = ''
+        start = 1
+        blockStart = 1
+        declStart = 0
+        stack = []
+        stack.append(self.types)
+        bcnt = 0
+        curr = {}
+        oldStmt = copy.deepcopy(self.stmt)
+        # newStmt = self.removeUnnecessaryItems()
+        # self.stmt = newStmt
+        # self.buildDictionary()
+        for x in oldStmt:
+            if x in ['PRINT_START', 'PRINT_END', 'BRANCH LABEL_WHILE',
+                     'BRANCH LABEL_WHILE_END', 'BRANCH LABEL_DO_WHILE',
+                     'BRANCH LABEL_DO_WHILE_END', 'BRANCH LABEL_IF', 'BRANCH LABEL_IF_ELSE',
+                     'BRANCH LABEL_ELSE', 'BRANCH LABEL_IF_ELSE_END', 'BRANCH LABEL_IF_END',
+                     'BRANCH LABEL_WHILE', 'BRANCH LABEL_WHILE_END','BRANCH LABEL_DO_WHILE',
+                     'BRANCH LABEL_DO_WHILE_END', 'BRANCH LABEL_FOR', 'BRANCH LABEL_FOR_END'] or x == None:
+                continue
+
+            if x == ';' and declStart == 1:
+                declStart = 0
+
+            if 'TYPE' in x and (blockStart == 1 or start == 1):
+                start = 0
+                type = x[5:]
+                declStart = 1
+                continue
+            if 'BLOCK_START' in x:
+                if start == 0:
+                    newdict = {}
+                    stack.append(newdict)
+                blockStart = 1
+                ## Get the top of the stack ##
+                # stack.append(block+bcnt)
+                curr = stack[-1]
+                # bcnt += 1
+            elif 'BLOCK_END' in x:
+                blockStart = 0
+                stack.pop()
+
+            elif declStart == 1:
+                if x != ',':
+                    curr[x] = type
+            elif x not in ['=', ',', ';', 'input', '(', ')'] and \
+                x not in self.math and \
+                x not in self.umath and \
+                'BINARY' not in x and\
+                'UNARY ' not in x and \
+                x not in self.symbols and \
+                not re.match(r'[0-9]+', x):
+                if self.checkIfVarDeclared(x, stack) == 0:
+                    print "Error: Variable '%s' used but not declared.! " %(x)
+                    sys.exit(-1)
+        print "Static Semantics check succeeded.!"
+
+        newStmt = self.removeUnnecessaryItems()
+        print newStmt
+        self.stmt = newStmt
 
     def reset(self):
         self.spill = ''
@@ -64,8 +166,12 @@ class LiveAnalysis:
         ifLabel = 0
         elseLabel = 0
         whileStart = 0
-        flag = 0
+        forStart = 0
+        doWhileEnd = 0
+        # flag = 0
         for line in self.stmt:
+            if line == None:
+                continue
             ## Print Handling ##
             if 'PRINT_START' in line:
                 if appendVal:
@@ -80,7 +186,7 @@ class LiveAnalysis:
                 appendVal.append(')')
                 appendVal.append(';')
                 printSet = 0
-                if ifLabel == 0 and whileStart == 0 and elseLabel == 0:
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
                     done = 1
                 else:
                     continue
@@ -103,7 +209,7 @@ class LiveAnalysis:
                 appendVal.append(';')
                 ifLabel -= 1
                 elseLabel -= 1
-                if ifLabel == 0 and whileStart == 0 and elseLabel == 0:
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
                     done  = 1
                 else:
                     continue
@@ -111,7 +217,7 @@ class LiveAnalysis:
                 appendVal.append('if_end')
                 appendVal.append(';')
                 ifLabel -= 1
-                if ifLabel == 0 and whileStart == 0 and elseLabel == 0:
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
                     done  = 1
                 else:
                     continue
@@ -127,12 +233,46 @@ class LiveAnalysis:
             elif line == 'BRANCH LABEL_WHILE_END':
                 appendVal.append('END_LOOP')
                 whileStart -= 1
-                if ifLabel == 0 and whileStart == 0 and elseLabel == 0:
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
                     done  = 1
                 else:
                     continue
 
-            if ifLabel >= 1 or elseLabel >= 1 or printSet == 1 or whileStart >= 1:
+            ## DO WHILE ##
+            if line == 'BRANCH LABEL_DO_WHILE':
+                whileStart += 1
+                if appendVal:
+                    appendVal.append('LOOP_DO')
+                else:
+                    appendVal=['LOOP_DO']
+                continue
+                # appendVal.append('LOOP')
+            elif line == 'BRANCH LABEL_DO_WHILE_END':
+                appendVal.append('END_LOOP_DO')
+                doWhileEnd = 1
+                whileStart -= 1
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
+                    done  = 1
+                # else:
+                continue
+
+            ## FOR LOOP ##
+            if line == 'BRANCH LABEL_FOR':
+                forStart += 1
+                if appendVal:
+                    appendVal.append('LOOP_FOR')
+                else:
+                    appendVal=['LOOP_FOR']
+                continue
+            elif line == 'BRANCH LABEL_FOR_END':
+                appendVal.append('END_LOOP_FOR')
+                forStart -= 1
+                if ifLabel == 0 and whileStart == 0 and elseLabel == 0 and forStart == 0:
+                    done  = 1
+                else:
+                    continue
+
+            if ifLabel >= 1 or elseLabel >= 1 or printSet == 1 or whileStart >= 1 or forStart >= 1:
                 appendVal.append(line)
             elif done != 1:
                 if line == ';':
@@ -142,13 +282,19 @@ class LiveAnalysis:
                         appendVal.append(line)
                     else:
                         appendVal = [line]
+            elif doWhileEnd == 1:
+                doWhileEnd = 0
+                if appendVal:
+                    appendVal.append(line)
+                else:
+                    appendVal = [line]
 
             if done == 1:
                 if len(appendVal) == 0:
                     done = 0
                     continue
-                # print "Val: ", appendVal
-                if appendVal[0] in ['if', 'LOOP']:
+                print "Val: ", appendVal
+                if appendVal[0] in ['if', 'LOOP', 'LOOP_DO', 'LOOP_FOR', 'END_LOOP_DO']:
                     list = []
                     for key in appendVal:
                         if key != ';':
@@ -178,50 +324,47 @@ class LiveAnalysis:
 
     # Actual Analysis for each line #
     def graphGen(self):
-        # print self.Dict
-        # return
         for key in self.Dict.keys():
             list = self.Dict[key]
-            # print "Line ", list
-            # if len(list) <=0:
-            #     continue
-            if len(list) > 1 and list[1] == '=':
+            length = len(list)
+            if length > 1 and list[1] == '=':
                 self.Def.append(self.Dict[key][0])
-                for val in list[2:]:
-                    if (val != 'input' and not re.search('^[0-9]+$', val) and val not in [')', '(', ';']):
-                        if 'UNARY' in val:
-                            variable = val[7:]
-                            if (not re.search('^[0-9]+$', variable)):
-                                self.Use.append(variable)
-                        elif 'BINARY' in val:
+                for i in range(length-1):
+                    val = list[i+1]
+                    if (val != 'input' and \
+                        not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
                             continue
                         else:
-                             self.Use.append(val)
-            elif len(list) > 0 and self.Dict[key][0] == 'print':
+                            if i+2 < length-1 and list[i+2] == '=':
+                                self.Def.append(val)
+                            else:
+                                self.Use.append(val)
+            elif length > 0 and self.Dict[key][0] == 'print':
                 ## Update use variable ##
                 for val in list[1:]:
-                    if (not re.search('^[0-9]+$', val) and val not in [')', '(', ';']):
-                        if 'UNARY' in val:
-                            variable = val[7:]
-                            if (not re.search('^[0-9]+$', variable)):
-                                self.Use.append(variable)
-                        elif 'BINARY' in val:
-                            continue
+                    if (not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
+                           continue
                         else:
                             self.Use.append(val)
             else:
                 ## Handling If and While ##
-                length = len(list)
+                # length = len(list)
                 if length > 1:
                     # print list
                     for val in list[1:]:
-                        if (not re.search('^[0-9]+$', val) and val not in [')', '(', ';']):
-                            if 'UNARY' in val:
-                                # if self.Use:
-                                variable = val[7:]
-                                if (not re.search('^[0-9]+$', variable)):
-                                    self.Use.append(variable)
-                            elif 'BINARY' in val:
+                        if (not re.search('^[0-9]+$', val) and \
+                            val not in [')', '(', ';', '='] and \
+                            val not in self.umath and \
+                            val not in self.symbols):
+                            if 'UNARY' in val or 'BINARY' in val:
                                 continue
                             else:
                                 self.Use.append(val)
@@ -270,7 +413,7 @@ class LiveAnalysis:
                 break
 
         for i in range(self.lineno):
-            print "Line: ", self.Dict[i], " In: ", self.inDict[i], " Def : ", self.useDict[i]
+            print "Line: ", self.Dict[i], " In: ", self.inDict[i], " Use : ", self.useDict[i], " Def: ", self.defDict[i]
         # print "In Dict: ", self.inDict[]
         # print "Out Dict: ", self.outDict
         # print variables
@@ -428,11 +571,12 @@ class LiveAnalysis:
     def run(self):
         ret = -1
         count = 0
+        self.staticSemanticCheck()
         while ret != 0:
             self.buildDictionary()
             self.graphGen()
             count += 1
-            ret = self.graphColoring(2)
+            ret = self.graphColoring(7)
             if ret != 0:
                 self.reconstructGraph2(self.spill)
                 self.reset()

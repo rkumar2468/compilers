@@ -1,0 +1,12 @@
+int i, array[];
+int d;
+d = input();
+array = new int[d];
+for (i = 1; i <= d; i++) {
+	array[i-1] = i*i;
+}
+for (i = 1; i <= d; i++) {
+	print(array[i-1]);
+}
+
+

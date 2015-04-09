@@ -17,9 +17,15 @@ class Program:
 
     def genCode(self):
         # print 'Program'
-        self.declseq.genCode()
+        # if not self.declseq:
+        #     print "Error in the input proto file, no declaration statements found.!"
+        #     sys.exit(-1)
+        intermediateCode.append('BLOCK_START')
+        if self.declseq:
+            self.declseq.genCode()
         if self.stmtSeq:
             self.stmtSeq.genCode()
+        intermediateCode.append('BLOCK_END')
 
 class DECLSEQ:
     def __init__(self, decl='', declSeq=''):
@@ -39,7 +45,7 @@ class DECL:
         self.varlist = varlist
 
     def genCode(self):
-        # global intermediateCode
+        global intermediateCode
         intermediateCode.append('TYPE '+self.type.genCode())
         self.varlist.genCode()
         intermediateCode.append(';')
@@ -95,7 +101,7 @@ class DIMSTAR:
 
 class DIMEXPR:
     global intermediateCode
-    def __init__(self, lbrac, rbrac, exp):
+    def __init__(self, lbrac, exp, rbrac):
         self.lbrac = lbrac
         self.rbrac = rbrac
         self.exp = exp
@@ -103,7 +109,9 @@ class DIMEXPR:
     def genCode(self):
         global intermediateCode
         intermediateCode.append(self.lbrac)
-        self.exp.genCode()
+        ret = self.exp.genCode()
+        if ret != None:
+            intermediateCode.append(ret)
         intermediateCode.append(self.rbrac)
 
 ## StmtSeq ##
@@ -130,6 +138,7 @@ class Statement:
     def genCode(self):
         if self.stmt:
             self.stmt.genCode()
+            intermediateCode.append(';')
 
 class Assignment:
     global intermediateCode
@@ -169,24 +178,35 @@ class Print:
         self.type = 'print'
 
     def genCode(self):
-        global intermediateCode
+        # global intermediateCode
         intermediateCode.append('PRINT_START')
-        if self.exp.exp.type == 'variable' or self.exp.exp.type == 'num':
+        if (self.exp.type == 'variable' or self.exp.type == 'num')\
+                or \
+            (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
             intermediateCode.append(self.exp.genCode())
         else:
-            self.exp.genCode()
+            ret = self.exp.genCode()
+            if ret != None:
+                intermediateCode.append(ret)
         intermediateCode.append('PRINT_END')
         intermediateCode.append(';')
 
 class Block:
     global intermediateCode
-    def __init__(self, stmtSeq):
+    def __init__(self, declseq, stmtSeq):
+        self.declseq = declseq
         self.stmtseq = stmtSeq
         self.type = 'block'
 
     def genCode(self):
         # print "Block Gen Code."
+        intermediateCode.append('BLOCK_START')
+        if not self.stmtseq or not self.declseq:
+            sys.exit(-1)
+        self.declseq.genCode()
         self.stmtseq.genCode()
+        intermediateCode.append('BLOCK_END')
+        intermediateCode.append(';')
 
 class Input:
     global intermediateCode
@@ -238,7 +258,9 @@ class IFELSE:
     def genCode(self):
         global intermediateCode
         intermediateCode.append('BRANCH LABEL_IF_ELSE')
-        if (self.exp.type == 'variable' or self.exp.type == 'num') or (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
+        if (self.exp.type == 'variable' or self.exp.type == 'num') \
+                or \
+                (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
             intermediateCode.append(self.exp.genCode())
             intermediateCode.append(';')
         else:
@@ -310,27 +332,33 @@ class AEOPT:
         if self.exp:
             self.exp.genCode()
 
-## Raj - Should handle pre and post increment/decrement operations ##
+## Raj - Should handle pre and post increment/decrement operations -- Done ##
 class SE:
     global intermediateCode
     def __init__(self, lhs, op='', exp=''):
         self.lhs = lhs
         self.exp = exp
         self.op = op
-        # self.pre = pre
+        self.type = 'se'
 
     def genCode(self):
-        intermediateCode.append(self.lhs.genCode())
+        ret = self.lhs.genCode()
+        if ret != None:
+            intermediateCode.append(ret)
         if self.op:
             intermediateCode.append(self.op)
         if self.exp:
             # print self.exp,
-            if self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num'):
+            if (self.exp.type == 'variable' or self.exp.type == 'num')\
+                or \
+            (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
                 # if self.pre == 1:
                 intermediateCode.append(self.exp.genCode())
             else:
-                self.exp.genCode()
-        intermediateCode.append(';')
+                ret = self.exp.genCode()
+                if ret != None:
+                    intermediateCode.append(ret)
+        # intermediateCode.append(';')
 
 ## Return Values ##
 class Expression:
@@ -341,6 +369,24 @@ class Expression:
 
     def genCode(self):
         return self.exp.genCode()
+
+class ARRAY:
+    global intermediateCode
+    def __init__(self, new, type, dimexpr, dimstar):
+        self.keyword = new
+        self.TYPE = type
+        self.dimexpr = dimexpr
+        self.dimstar = dimstar
+        self.type = 'array'
+
+    def genCode(self):
+        # return self.exp.genCode()
+        # print 'Arrays: To be implemented.!'
+        intermediateCode.append(self.keyword)
+        intermediateCode.append(self.TYPE.genCode())
+        self.dimexpr.genCode()
+        if self.dimstar:
+            self.dimstar.genCode()
 
 ## Return Values ##
 class Number:
@@ -369,15 +415,21 @@ class Unary_Ops:
         intermediateCode.append('UNARY START')
         if self.post == 0:
             intermediateCode.append(self.op)
-            if self.operand.type and self.operand.type == 'ae':
-                self.operand.genCode()
-            else:
-                intermediateCode.append(self.operand.genCode())
+            # if self.operand.type and self.operand.type == 'ae':
+            #     intermediateCode.append(self.operand.genCode())
+            # else:
+            if self.operand:
+                ret = self.operand.genCode()
+            if ret != None:
+                intermediateCode.append(ret)
         else:
-            if self.operand.type and self.operand.type == 'ae':
-                self.operand.genCode()
-            else:
-                intermediateCode.append(self.operand.genCode())
+            # if self.operand.type and self.operand.type == 'ae':
+                # self.operand.genCode()
+            # else:
+            if self.operand:
+                ret = self.operand.genCode()
+            if ret != None:
+                intermediateCode.append(ret)
             intermediateCode.append(self.op)
         intermediateCode.append('UNARY END')
 
@@ -431,11 +483,11 @@ class FOR:
         # print 'To be implemented.'
         intermediateCode.append('BRANCH LABEL_FOR')
         self.seopt1.genCode()
-        # intermediateCode.append(';')
+        intermediateCode.append(';')
         self.aeopt.genCode()
         intermediateCode.append(';')
-        self.seopt2.genCode()
-        # intermediateCode.append(';')
+        # self.seopt2.genCode()
+        intermediateCode.append(';')
         self.stmt.genCode()
         intermediateCode.append('BRANCH LABEL_FOR_END')
         intermediateCode.append(';')
@@ -449,6 +501,9 @@ class DO_WHILE:
 
     def genCode(self):
         intermediateCode.append('BRANCH LABEL_DO_WHILE')
+        intermediateCode.append(';')
+        self.stmt.genCode()
+        intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
         if (self.exp.type == 'variable' or self.exp.type == 'num')\
                 or \
             (self.exp.type == 'ae' and (self.exp.exp.type == 'variable' or self.exp.exp.type == 'num')):
@@ -457,15 +512,17 @@ class DO_WHILE:
         else:
             self.exp.genCode()
             intermediateCode.append(';')
-        self.stmt.genCode()
-        intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
-        intermediateCode.append(';')
+        # intermediateCode.append(';')
 
 ## Tracking variables - for static semantic check ##
 names = {}
 
 ## Precedence and Associativity Rules ##
 precedence =(
+                ('nonassoc', 'ELSE'),
+                ('nonassoc', 'THEN'),
+                ('nonassoc', 'IF'),
+                ('right', 'EQL'),
                 ('left','BINOR'),
                 ('left','BINAND'),
                 ('nonassoc','DBLEQL', 'NOTEQL'),
@@ -588,8 +645,8 @@ def p_unaryPrePost(p):
 
 def p_lhs(p):
     'lhs : lhs LSQUAREBRACE expression RSQUAREBRACE'
-    names[p[1]] = p[3]
-    p[0] = LHS(p[1], p[3])
+    # names[p[1]] = p[3]
+    p[0] = LHS(p[1], p[2], Expression(p[3]), p[4])
 
 def p_expression(p):
     '''expression : lhs
@@ -597,21 +654,22 @@ def p_expression(p):
                   | input
                   | TRUE
                   | FALSE
-                  | NEW type dimexpr dimstar'''
-    if len(p) == 2:
-        p[0] = Expression(p[1])
-    else:
-        p[0] = Expression(p[1], p[2], p[3], p[4])
+                  | array'''
+    p[0] = Expression(p[1])
+
+def p_array(p):
+    'array : NEW type dimexpr dimstar'
+    p[0] = ARRAY(p[1], p[2], p[3], p[4])
 
 def p_dimexpr(p):
     'dimexpr : LSQUAREBRACE expression RSQUAREBRACE'
-    p[0] = DIMEXPR(p[2])
+    p[0] = DIMEXPR(p[1], Expression(p[2]), p[3])
 
 def p_dimstar(p):
     '''dimstar : LSQUAREBRACE RSQUAREBRACE dimstar
              | '''
     if len(p) > 1:
-        if p[4]:
+        if p[3]:
             p[0] = DIMSTAR(p[1], p[2], p[3])
         else:
             p[0] = DIMSTAR(p[1], p[2])
@@ -689,7 +747,8 @@ def run(data):
     parser = yacc.yacc()
     result = parser.parse(data)
     if result:
-        print "Syntax Check Success.!"
+        # print "Syntax Check Success.!"
+        print "Parsing Completed.!"
     else:
         print "Syntax Check Failed.!\nExitting.!"
         sys.exit(-1)
