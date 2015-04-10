@@ -37,6 +37,177 @@ class LiveAnalysis:
         self.types = {}
         self.symbols = ['new', 'int', 'bool', '[', ']']
 
+    def removeLinesFromStatement(self, stmt, idx, var):
+        countVar = stmt.count(var)
+        for cnt in range(countVar):
+            newIdx = stmt.index(var,idx)
+            idx = newIdx + 1
+            if stmt[newIdx-1] != ';' and \
+               stmt[newIdx-1] != 'BLOCK_START' and \
+               stmt[newIdx-1] != 'BLOCK_END' or \
+               stmt[newIdx+2] == 'input':
+                continue
+            semiIdx = stmt.index(';', newIdx)
+            offset = semiIdx - newIdx + 1
+            for i in range(offset):
+                # print "Removing ", stmt[newIdx]
+                stmt.pop(newIdx)
+        # print stmt
+        return stmt
+
+    def removeUnusedAssignments(self, stmt):
+        bDict = {}
+        block = 0
+        donotRemove = []
+        for i in self.Dict.keys():
+            list = self.Dict[i]
+            length = len(list)
+            if 'BLOCK_START' in list:
+                block += 1
+                continue
+            elif 'BLOCK_END' in list:
+                if block in bDict.keys() and len(bDict[block]) != 0:
+                    ## Remove the line ##
+                    print "Remove the line."
+                    ## Code for removing the line ##
+                    ## Go till block no- block ##
+                    lis = bDict[block]
+                    print lis
+                    ## If there are multiple = in the statement dont remove ##
+                    idx = 0
+                    for i in range(block):
+                        # print i, ' Darling --> ', bDict[block]
+                        newIdx = stmt.index('BLOCK_START',idx)
+                        idx = newIdx+1
+                        # print idx
+                    for i in set(lis):
+                        ## From there remove the entries of the assignment ##
+                        nstmt = self.removeLinesFromStatement(stmt,idx,i)
+                        # print nstmt
+                        stmt = nstmt
+                block -= 1
+                continue
+            if list[1] == '=':
+                if 'input' in list:
+                    if '[' not in list:
+                        donotRemove.append(list[0])
+                for i in range(length-1):
+                    val = list[i+1]
+                    if (val != 'input' and \
+                        not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
+                            continue
+                        else:
+                            if i+2 < length-1 and list[i+2] == '=':
+                                if block in bDict.keys():
+                                    bDict[block].append(list[0])
+                                else:
+                                    lis = [list[0]]
+                                    bDict[block] = lis
+                            else:
+                                # self.Use.append(val)
+                                lis = bDict[block]
+                                if val in lis:
+                                    bDict[block] = [x for x in bDict[block] if x != val]
+
+                if block in bDict.keys():
+                    bDict[block].append(list[0])
+                else:
+                    lis = [list[0]]
+                    bDict[block] = lis
+            elif length > 0 and list[0] == 'print':
+                ## Update use variable ##
+                for val in list[1:]:
+                    if (not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
+                           continue
+                        else:
+                            # self.Use.append(val)
+                            lis = bDict[block]
+                            if val in lis:
+                                bDict[block] = [x for x in bDict[block] if x != val]
+            else:
+                ## Handling If and While ##
+                # length = len(list)
+                if length > 1:
+                    # print list
+                    for val in list[1:]:
+                        if (not re.search('^[0-9]+$', val) and \
+                            val not in [')', '(', ';', '='] and \
+                            val not in self.umath and \
+                            val not in self.symbols):
+                            if 'UNARY' in val or 'BINARY' in val:
+                                continue
+                            else:
+                                # self.Use.append(val)
+                                lis = bDict[block]
+                                if val in lis:
+                                    bDict[block] = [x for x in bDict[block] if x != val]
+        return stmt
+
+    ## Have to define ##
+    def semanticsAssignmentCheck(self):
+        bDict = {}
+        block = 0
+        donotRemove = []
+        for i in self.Dict.keys():
+            list = self.Dict[i]
+            length = len(list)
+            if 'BLOCK_START' in list:
+                block += 1
+                continue
+            elif 'BLOCK_END' in list:
+                block -= 1
+                if len(bDict[block]) != 0:
+                    ## Remove the line ##
+                    print "Remove the line."
+                    ## Code for removing the line ##
+
+                continue
+            if list[1] == '=':
+                if 'input' in list:
+                    # inp = 1
+                    if '[' not in list:
+                        donotRemove.append(list[0])
+
+                for i in range(length-1):
+                    val = list[i+1]
+                    if (val != 'input' and \
+                        not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
+                            continue
+                        else:
+                            if i+2 < length-1 and list[i+2] == '=':
+                                if block in bDict.keys():
+                                    bDict[block].append(list[0])
+                                else:
+                                    lis = [list[0]]
+                                    bDict[block] = lis
+                            else:
+                                if val not in bDict[block]:
+                                    print "Static Semantic Failed for the variable:",val
+                                    sys.exit(-1)
+            elif length > 0 and self.Dict[key][0] == 'print':
+                ## Update use variable ##
+                for val in list[1:]:
+                    if (not re.search('^[0-9]+$', val) and \
+                        val not in [')', '(', ';', '='] and \
+                        val not in self.umath and \
+                        val not in self.symbols):
+                        if 'UNARY' in val or 'BINARY' in val:
+                           continue
+                        else:
+                            self.Use.append(val)
+
     def checkIfVarDeclared(self, var, varList):
         ret = 0
         length = len(varList)
@@ -56,12 +227,18 @@ class LiveAnalysis:
                 continue
             if x == 'BLOCK_END':
                 # bend = 1
+                newStmt.append(x)
+                newStmt.append(';')
                 continue
             elif declStart == 1:
                 if x == ';':
                     declStart = 0
-            elif x != 'BLOCK_START'  and prev != x and declStart == 0:
-                if 'TYPE' in x:
+            # elif x != 'BLOCK_START'  and prev != x and declStart == 0:
+            elif prev != x and declStart == 0:
+                if x == 'BLOCK_START':
+                    newStmt.append(x)
+                    newStmt.append(';')
+                elif 'TYPE' in x:
                     declStart = 1
                 else:
                     newStmt.append(x)
@@ -72,6 +249,45 @@ class LiveAnalysis:
                 # bend = 0
         return newStmt
 
+    def updateVariableName(self, stmt, pos, variable, dict, stack, varDict):
+        offset = pos
+        block = 0
+        for entry in stmt[pos:]:
+            if entry == ',':
+                offset += 1
+                continue
+            if entry == 'BLOCK_START':
+                block += 1
+                offset += 1
+                continue
+            elif entry == 'BLOCK_END':
+                block -= 1
+                offset += 1
+                continue
+            if block == 0:
+                if entry == 'BLOCK_END':
+                    break
+                elif entry == variable:
+                    val = dict[entry]
+                    if val > 1:
+                        ## Have to update even the stack dictionary ##
+                        newVar = str(entry) + str(val)
+                        poped = stack.pop()
+                        if entry in poped.keys():
+                            value = poped[entry]
+                            poped.pop(entry)
+                            poped[newVar] = value
+                            stmt[offset] = newVar
+                            # varDict[entry] -= 1
+                            varDict[newVar] = 1
+                        elif newVar in poped.keys():
+                            stmt[offset] = newVar
+                        else:
+                            print "error..!"
+                        stack.append(poped)
+            offset += 1
+        return stmt, stack, varDict
+
     def staticSemanticCheck(self):
         print 'Intermediate Code: ',self.stmt
         ## Static Semantic Check ##
@@ -80,10 +296,14 @@ class LiveAnalysis:
         blockStart = 1
         declStart = 0
         stack = []
+        defStack = []
         stack.append(self.types)
         bcnt = 0
         curr = {}
+        variables = {}
         oldStmt = copy.deepcopy(self.stmt)
+        pos = 0
+        stmt = []
         # newStmt = self.removeUnnecessaryItems()
         # self.stmt = newStmt
         # self.buildDictionary()
@@ -94,6 +314,7 @@ class LiveAnalysis:
                      'BRANCH LABEL_ELSE', 'BRANCH LABEL_IF_ELSE_END', 'BRANCH LABEL_IF_END',
                      'BRANCH LABEL_WHILE', 'BRANCH LABEL_WHILE_END','BRANCH LABEL_DO_WHILE',
                      'BRANCH LABEL_DO_WHILE_END', 'BRANCH LABEL_FOR', 'BRANCH LABEL_FOR_END'] or x == None:
+                pos += 1
                 continue
 
             if x == ';' and declStart == 1:
@@ -103,11 +324,14 @@ class LiveAnalysis:
                 start = 0
                 type = x[5:]
                 declStart = 1
+                pos += 1
                 continue
             if 'BLOCK_START' in x:
                 if start == 0:
                     newdict = {}
                     stack.append(newdict)
+                    new2dict = {}
+                    defStack.append(new2dict)
                 blockStart = 1
                 ## Get the top of the stack ##
                 # stack.append(block+bcnt)
@@ -115,11 +339,23 @@ class LiveAnalysis:
                 # bcnt += 1
             elif 'BLOCK_END' in x:
                 blockStart = 0
-                stack.pop()
+                if len(stack) > 0:
+                    poped = stack.pop()
+                    for item in poped:
+                        if variables[item] == 1:
+                            variables.pop(item)
+                        else:
+                            variables[item] -= 1
 
             elif declStart == 1:
-                if x != ',':
+                if x != ',' and x != ']' and x != '[':
                     curr[x] = type
+                    if x in variables.keys():
+                        variables[x] += 1
+                    else:
+                        variables[x] = 1
+                stmt, stack, variables = self.updateVariableName(oldStmt,pos,x,variables, stack, variables)
+                # print stmt
             elif x not in ['=', ',', ';', 'input', '(', ')'] and \
                 x not in self.math and \
                 x not in self.umath and \
@@ -130,10 +366,14 @@ class LiveAnalysis:
                 if self.checkIfVarDeclared(x, stack) == 0:
                     print "Error: Variable '%s' used but not declared.! " %(x)
                     sys.exit(-1)
-        print "Static Semantics check succeeded.!"
 
+            pos += 1
+            # print variables
+        print "Static Semantics check succeeded.!"
+        # sys.exit(-1)
+        self.stmt = stmt
         newStmt = self.removeUnnecessaryItems()
-        print newStmt
+        # print newStmt
         self.stmt = newStmt
 
     def reset(self):
@@ -572,6 +812,11 @@ class LiveAnalysis:
         ret = -1
         count = 0
         self.staticSemanticCheck()
+        self.buildDictionary()
+        newstmt = copy.deepcopy(self.stmt)
+        self.semanticsAssignmentCheck()
+        self.stmt = self.removeUnusedAssignments(newstmt)
+        # sys.exit(-1)
         while ret != 0:
             self.buildDictionary()
             self.graphGen()

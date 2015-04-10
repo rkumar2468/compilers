@@ -3,5 +3,6 @@ int x;
 int array[][];
 x = input();
 array = new int [10+a];
-print (x);
-print (array[-1]);
+print (-x);
+print (10+a);
+print (array[-1][0]);

@@ -8,7 +8,7 @@
 ## SBU ID: 	109785402				    						                                        ##
 ##########################################################################################################
 
-import re
+import re, sys
 
 class CodeGen:
     def __init__(self, asmfile, allocReg, Dict, remVar):
@@ -378,7 +378,7 @@ class CodeGen:
 
     def getHeap(self):
         ## Have to put the size in $a0 prior to this function call ##
-        return '; ## Allocating heap using sbrk system call ##;   li $v0, 9;   syscall; ## End of sbrk syscal ##;'
+        return '; ; ## Allocating heap using sbrk system call ##;   li $v0, 9;   syscall; ## End of sbrk system call ##;'
 
     def evaluateExpression(self, list):
         res = ''
@@ -502,7 +502,20 @@ class CodeGen:
                         newidx1 = list.index('[', idx)
                         newidx2 = list.index(']', newidx1)
                         idx = newidx2
-                        res, reg = self.evaluateExpression(list[newidx1+1:newidx2])
+                        binexp, reg = self.evaluateExpression(list[newidx1+1:newidx2])
+                        res += binexp
+                        if reg != '$t9':
+                            res+= ' li $t9, 4; mult %s, $t9;' %(reg)
+                        else:
+                            res+= ' li $t8, 4; mult %s, $t8;' %(reg)
+                        if lbCount > 1 and i != 0:
+                            ## Need to add size as an offset as well ##
+                            ## Eg: a[i][j] = a + i*4 + i*secDimSize + j*4 ##
+                            res += ' ori $t9, $t8, 0; mflo $t8; add $t8, $t9, $t8;'
+                        else:
+                            res += ' mflo $t8;'
+                    res += ' add $t9, $t8, $%s;' %(self.allocReg[list[0]])
+                    reg = '$t9'
         return res, reg
 
     def getIfLabel(self):
@@ -518,6 +531,16 @@ class CodeGen:
         memcount = 0
         memory = {}
         forStart = 0
+        '''
+        self.allocReg['a'] = 't0'
+        self.allocReg['i'] = 't1'
+        self.allocReg['j'] = 't2'
+        self.allocReg['k'] = 't3'
+        ret, reg = self.evaluateExpression(['a','[','BINARY -', 'i', '1', ']','[','j',']','[','k',']'])
+        print ret
+        print reg
+        sys.exit(-1)
+        '''
         for key in self.Dict.keys():
             lis = []
             # print "Raa -- ", key, self.Dict[key]
@@ -531,7 +554,7 @@ class CodeGen:
                         if ret:
                             lis.append(ret)
                     else:
-                        # print "Array Implementation.!"
+                        # print "Array Initialization.!"
                         ret, reg = self.evaluateExpression(val[5:-1])
                         if ret:
                             lis.append(ret)
