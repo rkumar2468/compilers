@@ -76,7 +76,6 @@ class LiveAnalysis:
                     ## If there are multiple = in the statement dont remove ##
                     idx = 0
                     for i in range(block):
-                        # print i, ' Darling --> ', bDict[block]
                         newIdx = stmt.index('BLOCK_START',idx)
                         idx = newIdx+1
                         # print idx
@@ -108,11 +107,9 @@ class LiveAnalysis:
                                     lis = [list[0]]
                                     bDict[block] = lis
                             else:
-                                # self.Use.append(val)
                                 lis = bDict[block]
                                 if val in lis:
                                     bDict[block] = [x for x in bDict[block] if x != val]
-
                 if block in bDict.keys():
                     bDict[block].append(list[0])
                 else:
@@ -128,13 +125,11 @@ class LiveAnalysis:
                         if 'UNARY' in val or 'BINARY' in val:
                            continue
                         else:
-                            # self.Use.append(val)
                             lis = bDict[block]
                             if val in lis:
                                 bDict[block] = [x for x in bDict[block] if x != val]
             else:
                 ## Handling If and While ##
-                # length = len(list)
                 if length > 1:
                     # print list
                     for val in list[1:]:
@@ -145,17 +140,14 @@ class LiveAnalysis:
                             if 'UNARY' in val or 'BINARY' in val:
                                 continue
                             else:
-                                # self.Use.append(val)
                                 lis = bDict[block]
                                 if val in lis:
                                     bDict[block] = [x for x in bDict[block] if x != val]
         return stmt
 
-    ## Have to define ##
     def semanticsAssignmentCheck(self):
         bDict = {}
         block = 0
-        donotRemove = []
         for i in self.Dict.keys():
             list = self.Dict[i]
             length = len(list)
@@ -164,20 +156,15 @@ class LiveAnalysis:
                 continue
             elif 'BLOCK_END' in list:
                 block -= 1
-                if len(bDict[block]) != 0:
-                    ## Remove the line ##
-                    print "Remove the line."
-                    ## Code for removing the line ##
-
                 continue
             if list[1] == '=':
-                if 'input' in list:
-                    # inp = 1
-                    if '[' not in list:
-                        donotRemove.append(list[0])
-
-                for i in range(length-1):
-                    val = list[i+1]
+                if block in bDict.keys():
+                    bDict[block].append(list[0])
+                else:
+                    lis = [list[0]]
+                    bDict[block] = lis
+                for i in range(length):
+                    val = list[length - i - 1]
                     if (val != 'input' and \
                         not re.search('^[0-9]+$', val) and \
                         val not in [')', '(', ';', '='] and \
@@ -186,17 +173,17 @@ class LiveAnalysis:
                         if 'UNARY' in val or 'BINARY' in val:
                             continue
                         else:
-                            if i+2 < length-1 and list[i+2] == '=':
+                            # print length-i
+                            if i>0 and list[length - i] == '=':
                                 if block in bDict.keys():
-                                    bDict[block].append(list[0])
+                                    bDict[block].append(val)
                                 else:
-                                    lis = [list[0]]
+                                    lis = [val]
                                     bDict[block] = lis
-                            else:
-                                if val not in bDict[block]:
-                                    print "Static Semantic Failed for the variable:",val
-                                    sys.exit(-1)
-            elif length > 0 and self.Dict[key][0] == 'print':
+                            if block in bDict.keys() and val not in bDict[block]:
+                                print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
+                                sys.exit(-1)
+            elif length > 0 and list[0] == 'print':
                 ## Update use variable ##
                 for val in list[1:]:
                     if (not re.search('^[0-9]+$', val) and \
@@ -206,7 +193,24 @@ class LiveAnalysis:
                         if 'UNARY' in val or 'BINARY' in val:
                            continue
                         else:
-                            self.Use.append(val)
+                            if block in bDict.keys() and val not in bDict[block]:
+                                print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
+                                sys.exit(-1)
+            else:
+                ## Handling If and While ##
+                if length > 1:
+                    # print list
+                    for val in list[1:]:
+                        if (not re.search('^[0-9]+$', val) and \
+                            val not in [')', '(', ';', '='] and \
+                            val not in self.umath and \
+                            val not in self.symbols):
+                            if 'UNARY' in val or 'BINARY' in val:
+                                continue
+                            else:
+                                if block in bDict.keys() and val not in bDict[block]:
+                                    print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
+                                    sys.exit(-1)
 
     def checkIfVarDeclared(self, var, varList):
         ret = 0
@@ -253,7 +257,7 @@ class LiveAnalysis:
         offset = pos
         block = 0
         for entry in stmt[pos:]:
-            if entry == ',':
+            if entry == ',' or entry == '[' or entry == ']':
                 offset += 1
                 continue
             if entry == 'BLOCK_START':
@@ -807,16 +811,24 @@ class LiveAnalysis:
                 return -1
         return 0
 
+    def replaceBoolValues(self):
+        if self.stmt.index('true') or self.stmt.index('false'):
+            self.stmt = ['1' if x == 'true' else x  for x in self.stmt]
+            self.stmt = ['0' if x == 'false' else x  for x in self.stmt]
+        # print self.stmt
+        # sys.exit(0)
+
     # Starts the register allocation algorithm based on the number of registers #
     def run(self):
         ret = -1
         count = 0
+        self.replaceBoolValues()
         self.staticSemanticCheck()
         self.buildDictionary()
         newstmt = copy.deepcopy(self.stmt)
+        ## Define Before Use check ##
         self.semanticsAssignmentCheck()
         self.stmt = self.removeUnusedAssignments(newstmt)
-        # sys.exit(-1)
         while ret != 0:
             self.buildDictionary()
             self.graphGen()

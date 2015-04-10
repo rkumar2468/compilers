@@ -21,7 +21,7 @@ import sys, Parser
 
 def usage():
     print "\nUsage:"
-    print "python[.exe] protoplasm2.py <proto source file name>"
+    print "python[.exe] protoplasm3.py <proto source file name>"
 
 def commandlineCheck():
     if len(sys.argv) != 2:

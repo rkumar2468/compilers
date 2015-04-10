@@ -368,6 +368,10 @@ class Expression:
         self.type = 'ae'
 
     def genCode(self):
+        if self.exp == 'true':
+            return 'true'
+        elif self.exp == 'false':
+            return 'false'
         return self.exp.genCode()
 
 class ARRAY:

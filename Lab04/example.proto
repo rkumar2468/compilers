@@ -1,8 +1,15 @@
 int a;
-int x;
+int x,c,b;
+bool t;
 int array[][];
 x = input();
+c=b=1;
+a=10+c;
+t=true;
 array = new int [10+a];
 print (-x);
+print (t);
+t=false;
+a = b = c;
 print (10+a);
 print (array[-1][0]);
