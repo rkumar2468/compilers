@@ -1,0 +1,14 @@
+int  j, k, g, h, k, f, e, b, c,d, m, x;
+j = input();k = 5;g = j;h = k - 1;f = g * h;
+e = j;
+m = j;
+b = f;
+c = e + b;
+d = c;
+k = m + d;
+print(k + 1);
+x = 10;
+while (x)
+do
+    print (x);
+  x = x-1;

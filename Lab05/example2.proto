@@ -1,0 +1,18 @@
+{
+int x, a, z;
+    {
+        int b;
+        b = a + x;
+            {
+                int c;
+                c = b + 10;
+                x  = 10;
+            }
+    }
+a = 10;
+x= --a;
+x=a++;
+print (a=x);
+x = a = z + 10;
+}
+// x=10;

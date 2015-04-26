@@ -1,0 +1,33 @@
+int f;
+int hi(int x, int y)
+{
+    int a;
+    a = input();
+    for (;a<10;a++)
+        print(a);
+    return f;
+}
+
+void main()
+{
+    int a, b, c;
+    {
+        int x;
+        int x1;
+        {
+            int f;
+            int []a;
+            int x;
+            a = new int [10];
+            hi(x,x1);
+            print(x+f);
+        }
+        for(x=10;x<11;x++)
+            print(x);
+        while(x==11)
+        do
+            print (x);
+        f = 10;
+    }
+    return 0;
+}

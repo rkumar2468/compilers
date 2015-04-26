@@ -1,0 +1,65 @@
+int x, y, z, a;
+x = 13;
+y = input();
+z = !x;
+a = -y;
+a = x && y;
+print (x);
+print (y);
+print(z);
+y--;
+--z;
+if (a == x)
+then
+    a = 10;
+
+if 10 + 1
+then
+    a=15 * x + 11;
+else
+    a = 10;
+
+// Check this operation - Very Important //
+while (a&&a+y*x)
+do
+    print (x);
+
+do
+    print (x);
+while(x);
+
+for(x=10;x<11;x++)
+    print (x);
+
+if (!a)
+then
+    print (a);
+
+//void main()
+// {
+int a,x;
+//a++;
+//a=10;
+//a=x-y-z/10*5-a;
+//x = input();
+//y = new int [100];
+//y[y[10]] = 11;
+//print (x-y-z/10*5-a);
+//x = (y = 10) + (z=11);
+// if (x>=10 && x<10)
+// then
+//    print (10);
+// }
+//while(x>10)
+//do
+//{
+//    print (x);
+//    x++;
+//}
+//do
+//{
+//    print (x);
+//    x++;
+//}while(x>10);
+for(;;)
+    print (i);

@@ -1,0 +1,95 @@
+int x, y;
+bool z;
+x = input();
+print(x);
+y = - x;
+print (y);
+y = x + - x;
+print (y);
+print (x+x);
+print (x-x);
+print (x+-x);
+print (x*x);
+print (x/x);
+print (x%x);
+print (x&&x);
+print (0&&x);
+print (x||x);
+print (0||x);
+print (x==x);
+print (x==4);
+print (x!=x);
+print (x!=4);
+print (x>x);
+print (x>=x);
+print (x<x);
+print (x<=x);
+print (-x);
+print (!x);
+print (!0);
+if (!x) then
+  print (10);
+if (x) then {
+  int x;
+  x = 0;
+  print (x);
+}
+else
+  print (30);
+
+while (x)
+do {
+  print (x);
+
+  x = x-1;
+}
+x = 0;
+do {
+  x = x + 1;
+  print (x);
+} while(x < 5);
+for (x=100;x<110;x=x+1) {
+  print (x);
+}
+for (x=100;x<110;) {
+  print (x++);
+}
+for (x=100;x>90;) {
+  print (x--);
+}
+for (x=100;x<110;) {
+  print (++x);
+}
+for (x=100;x>90;) {
+  print (--x);
+}
+x = 10;
+print (x);
+{
+  int x;
+  x = 1;
+  print (x);
+}
+print (x);
+y = (x=8) + (x=4);
+print (y);
+z = true;
+if (z) then
+  print (1);
+z = false;
+if (z) then
+  print (1);
+else
+  print (2);
+{
+  int a[];
+  a = new int[10];
+  a[1] = 100;
+  a[2] = 200;
+  for (x=1;x<=2;x++) {
+    a[x] = x;
+  }
+  for (x=1;x<=2;x++) {
+    print (a[x]);
+  }
+}
