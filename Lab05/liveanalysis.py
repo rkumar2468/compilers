@@ -81,7 +81,7 @@ class LiveAnalysis:
         return tempStmt
 
     def removeUnusedAssignments2(self, stmt):
-        print self.nonArrayVar
+        print "Variable List: ", self.nonArrayVar
         print
         print
         for i in self.nonArrayVar:
@@ -183,74 +183,16 @@ class LiveAnalysis:
         return stmt
 
     def semanticsAssignmentCheck(self):
-        bDict = {}
-        block = 0
-        for i in self.Dict.keys():
-            list = self.Dict[i]
-            length = len(list)
-            print ' Raj: ', list
-            if length == 0:
-                continue
-            elif 'BLOCK_START' in list:
-                block += 1
-                continue
-            elif 'BLOCK_END' in list:
-                block -= 1
-                continue
-            elif list[1] == '=':
-                if block in bDict.keys():
-                    bDict[block].append(list[0])
-                else:
-                    lis = [list[0]]
-                    bDict[block] = lis
-                for i in range(length):
-                    val = list[length - i - 1]
-                    if (val != 'input' and \
-                        not re.search('^[0-9]+$', val) and \
-                        val not in [')', '(', ';', '='] and \
-                        val not in self.umath and \
-                        val not in self.symbols):
-                        if 'UNARY' in val or 'BINARY' in val:
-                            continue
-                        else:
-                            # print length-i
-                            if i>0 and list[length - i] == '=':
-                                if block in bDict.keys():
-                                    bDict[block].append(val)
-                                else:
-                                    lis = [val]
-                                    bDict[block] = lis
-                            if block in bDict.keys() and val not in bDict[block]:
-                                print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
-                                sys.exit(-1)
-            elif length > 0 and list[0] == 'print':
-                ## Update use variable ##
-                for val in list[1:]:
-                    if (not re.search('^[0-9]+$', val) and \
-                        val not in [')', '(', ';', '='] and \
-                        val not in self.umath and \
-                        val not in self.symbols):
-                        if 'UNARY' in val or 'BINARY' in val:
-                           continue
-                        else:
-                            if block in bDict.keys() and val not in bDict[block]:
-                                print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
-                                sys.exit(-1)
-            else:
-                ## Handling If and While ##
-                if length > 1:
-                    # print list
-                    for val in list[1:]:
-                        if (not re.search('^[0-9]+$', val) and \
-                            val not in [')', '(', ';', '='] and \
-                            val not in self.umath and \
-                            val not in self.symbols):
-                            if 'UNARY' in val or 'BINARY' in val:
-                                continue
-                            else:
-                                if block in bDict.keys() and val not in bDict[block]:
-                                    print "Static Semantic Failed for the variable: %s \nMSG: Used but not defined." %(val)
-                                    sys.exit(-1)
+        # print self.nonArrayVar
+        for var in self.nonArrayVar:
+            for line in self.stmt:
+                if 'variable_'+var+',' in line:
+                    list = re.split(' ', line)
+                    if list[1] != 'variable_'+var+',':
+                        print "Error: Variable %s is used before defining it.!" %(var)
+                        sys.exit(-1)
+                    else:
+                        break
 
     def checkIfVarDeclared(self, var, varList):
         ret = 0
@@ -261,6 +203,7 @@ class LiveAnalysis:
                 return 1
         return ret
 
+    ## Deprecated ##
     def removeUnnecessaryItems(self):
         newStmt = []
         # bend = 0
@@ -293,6 +236,7 @@ class LiveAnalysis:
                 # bend = 0
         return newStmt
 
+    ## Deprecated ##
     def updateVariableName(self, stmt, pos, variable, dict, stack, varDict):
         offset = pos
         block = 0
@@ -332,6 +276,7 @@ class LiveAnalysis:
             offset += 1
         return stmt, stack, varDict
 
+    ## Deprecated ##
     def staticSemanticCheck(self):
         print 'Intermediate Code: ',self.stmt
         ## Static Semantic Check ##
@@ -440,6 +385,7 @@ class LiveAnalysis:
         return self.stmt
 
     #  Building Dictionary  #
+    ## Deprecated ##
     def buildDictionary(self):
         i = 0
         appendVal = []
@@ -606,68 +552,6 @@ class LiveAnalysis:
 
     # Actual Analysis for each line #
     def graphGen(self):
-        '''
-        for key in self.Dict.keys():
-            list = self.Dict[key]
-            length = len(list)
-            if length > 1 and list[1] == '=':
-                self.Def.append(self.Dict[key][0])
-                for i in range(length-1):
-                    val = list[i+1]
-                    if (val != 'input' and \
-                        not re.search('^[0-9]+$', val) and \
-                        val not in [')', '(', ';', '='] and \
-                        val not in self.umath and \
-                        val not in self.symbols):
-                        if 'UNARY' in val or 'BINARY' in val:
-                            continue
-                        else:
-                            if i+2 < length-1 and list[i+2] == '=':
-                                self.Def.append(val)
-                            else:
-                                self.Use.append(val)
-            elif length > 0 and self.Dict[key][0] == 'print':
-                ## Update use variable ##
-                for val in list[1:]:
-                    if (not re.search('^[0-9]+$', val) and \
-                        val not in [')', '(', ';', '='] and \
-                        val not in self.umath and \
-                        val not in self.symbols):
-                        if 'UNARY' in val or 'BINARY' in val:
-                           continue
-                        else:
-                            self.Use.append(val)
-            else:
-                ## Handling If and While ##
-                # length = len(list)
-                if length > 1:
-                    # print list
-                    for val in list[1:]:
-                        if (not re.search('^[0-9]+$', val) and \
-                            val not in [')', '(', ';', '='] and \
-                            val not in self.umath and \
-                            val not in self.symbols):
-                            if 'UNARY' in val or 'BINARY' in val:
-                                continue
-                            else:
-                                self.Use.append(val)
-
-            # At each line we computed the Use, Defined lists.
-            ## Removing 'Memory' entries from Def and Use ##
-            if 'memory' in self.Def:
-                self.Def.remove('memory')
-            if 'memory' in self.Use:
-                self.Use.remove('memory')
-
-            self.variables = self.variables.union(sets.Set(self.Def))
-            self.variables = self.variables.union(sets.Set(self.Use))
-            # print self.variables, "      Variables"
-            self.defDict[key] = self.Def
-            self.useDict[key] = self.Use
-            self.Def = []
-            self.Use = []
-
-        '''
         lno = 0
         for line in self.stmt:
             # print line
@@ -837,53 +721,11 @@ class LiveAnalysis:
         return ret
 
     def reconstructGraph2(self, element):
-        '''
-        count = 1
-        length = len(self.stmt)
-        list1 = ['memory', '=', element,';']
-        list2 = [element,'=','memory',';']
-        prevIdx = 0
-        while prevIdx < length:
-            ## Finding the element being defined ##
-            idx1 = 0
-            uidx = self.checkForUnaryElement(self.stmt, prevIdx, element)
-
-            if element not in self.stmt[prevIdx:] and uidx < 0:
-                break
-            idx1 = self.stmt.index(element,prevIdx)
-            if uidx > 0 and idx1 > uidx:
-                idx1 = uidx
-            # if not idx1:
-            #     break
-            idx2 = self.stmt.index(';',idx1+1)
-            if not idx2:
-                break
-            temp = []
-            llen = len(list1)
-            if self.stmt[idx1+1] == '=':
-                temp = self.stmt[:idx2+1] + list1 + self.stmt[idx2+1:]
-                self.stmt = copy.deepcopy(temp)
-                prevIdx = self.stmt.index(';',idx2 + llen - 1)
-                length += 4
-            else:
-                prevIdx = idx2 + llen + 1
-                while self.stmt[idx1] != ';':
-                    # Do nothing
-                    idx1 -= 1
-                llen = len(list2)
-                temp = self.stmt[:idx1+1] + list2 + self.stmt[idx1+1:]
-                self.stmt = copy.deepcopy(temp)
-                length += 4
-            count += 1
-            '''
-        # print self.stmt
-        # print
         self.memory[element] = self.memcount
         self.memcount += 4
         list = ['la $t8, memory']
         val1 = ['sw variable_%s, %d($t8)' %(element, self.memory[element])]
         val2 = ['lw variable_%s, %d($t8)' %(element, self.memory[element])]
-        # list.append(val)
         index = 0
         tempList = []
         length = len(self.stmt)
@@ -894,26 +736,16 @@ class LiveAnalysis:
                 linelist = re.split(' ', line)
                 if linelist[1] == 'variable_'+element+',':
                     ## memory = variable ##
-                    # list.append(val1)
-                    # print self.stmt[:index+1]
-                    # print
-                    # print
-                    # print self.stmt[index+1:]
                     tempList = self.stmt[:index+1] + list + val1 + self.stmt[index+1:]
                     index += 2
-                    # lno += 3
+
                 else:
                     ## variable = memory ##
-                    # list.append(val2)
                     tempList = self.stmt[:index] + list + val2 + self.stmt[index:]
                     index += 2
-                    # lno += 3
                 if tempList:
                     self.stmt = tempList
-                    # print "Updated line at lno: ", lno
             index += 1
-        # print self.stmt
-        # sys.exit(-1)
 
     def graphColoring(self, k):
         g = self.graph
@@ -1061,6 +893,63 @@ class LiveAnalysis:
         # print tempList
         return tempList
 
+    def popSelfAndChildren(self, dict, key):
+        length = len(dict)
+        for i in range(key, length):
+            if i in dict.keys():
+                dict.pop(i)
+        return dict
+
+    def checkReturnInEveryControlFlowPath(self):
+        print self.stmt
+        print
+        print
+        idx = 0
+        ret = 0
+        mainFun = 0
+        returnDict = {}
+        blockno = 0
+        for line in self.stmt:
+            if line == 'main:':
+                mainFun = 1
+
+            if line == 'FUNCTION_BLOCK':
+                ret += 1
+                returnDict[blockno] = 1
+                continue
+            elif line == 'jr $ra':
+                ret -= 1
+                if blockno in returnDict.keys():
+                    if returnDict[blockno] > 0:
+                        returnDict[blockno] -= 1
+                    if returnDict[blockno] == 0:
+                        returnDict = self.popSelfAndChildren(returnDict, blockno)
+                        try:
+                            returnDict[blockno-1] -= 1
+                        except KeyError:
+                            pass
+
+            elif line == 'BRANCH LABEL_IF_ELSE':
+                blockno += 1
+                returnDict[blockno] = 2
+                ret += 2
+            elif line == 'BRANCH LABEL_IF_END' or line == 'BRANCH LABEL_IF_ELSE_END':
+                blockno -= 1
+            elif line == 'BRANCH LABEL_IF':
+                blockno += 1
+                returnDict[blockno] = 1
+                ret += 1
+            elif line == 'FUNCTION_BLOCK_END':
+                # print idx, self.stmt[idx], self.stmt[idx-1]
+                # if ret == 0 or self.stmt[idx-1] == 'jr $ra' or mainFun == 1:
+                if len(returnDict) ==  0 or mainFun == 1 or (returnDict[0] == 0):
+                    ret = 0
+                    mainFun = 0
+                    returnDict = {}
+                else:
+                    print "Error: Return statement is missing in some control flow paths of the function definition.!"
+                    sys.exit(-1)
+            idx += 1
 
     # Starts the register allocation algorithm based on the number of registers #
     def run(self):
@@ -1079,13 +968,15 @@ class LiveAnalysis:
         newstmt = self.removeTypes(newstmt)
         # print newstmt
         newstmt = self.removeUnusedAssignments2(newstmt)
+        self.stmt = newstmt
 
         ## Define Before Use check ##
         ## Will do once the liveness is completed ##
-        # self.semanticsAssignmentCheck()
+        self.semanticsAssignmentCheck()
 
-        # self.stmt = self.removeUnusedAssignments(newstmt)
-        self.stmt = newstmt
+        ## Return Statement check for all functions in ##
+        ## in every control flow path ##
+        self.checkReturnInEveryControlFlowPath()
 
         while ret != 0:
             self.graphGen()
