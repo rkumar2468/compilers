@@ -889,7 +889,7 @@ class DO_WHILE:
         intermediateCode.append('__DO_WHILE_LABEL_START__')
         self.stmt.genCode()
         self.exp.genCode()
-        intermediateCode.append('beq $t8, $zero, __DO_WHILE_LABEL__')
+        intermediateCode.append('bne $t8, $zero, __DO_WHILE_LABEL__')
         intermediateCode.append('b __DO_WHILE_LABEL_START__')
         ## POP-1 While Label ##
         intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
@@ -901,9 +901,7 @@ names = {}
 
 ## Precedence and Associativity Rules ##
 precedence =(
-                ('nonassoc', 'ELSE'),
-                ('nonassoc', 'THEN'),
-                ('nonassoc', 'IF'),
+                ('right', 'ELSE'),
                 ('right', 'EQL'),
                 ('left','BINOR'),
                 ('left','BINAND'),

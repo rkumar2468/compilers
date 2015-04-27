@@ -31,18 +31,21 @@ void main()
             x1 = 100;
             hi(x,x1);
             print(x+f);
+
             if (x == 10)
             then
                 f = 54;
             else
-                f = 45;
+                print (x);
+               // f = 45;
+
         }
         for(x=10;x<11;x++)
             print(x);
         do
         {
             print (x);
-        }while(x==11);
+        }while(x<11);
         f = 10;
     }
     return 0;

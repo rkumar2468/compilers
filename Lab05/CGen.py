@@ -583,12 +583,14 @@ class CodeGen:
                 self.loopLabelStack.append(label)
                 label2 = self.genLabel()
                 self.loop2LabelStack.append(label2)
-                line += str(';%s:;' %label)
+                # line += str(';%s:;' %label)
             elif '__FOR_LABEL__' in line:
                 label = self.loop2LabelStack[-1]
                 line = re.sub('__FOR_LABEL__', label, line)
                 line = str('  '+line)
-            elif line ==  '__FOR_LABEL_START__' or line == 'b __FOR_LABEL_START__':
+            elif line ==  '__FOR_LABEL_START__':
+                line = str(';%s:;' %(self.loopLabelStack[-1]))
+            elif line == 'b __FOR_LABEL_START__':
                 ## This is handled in FOR_END ##
                 continue
             elif line == 'BRANCH LABEL_FOR_END':
