@@ -11,13 +11,14 @@
 import re, sys
 
 class CodeGen:
-    def __init__(self, asmfile, allocReg, Dict, remVar):
+    def __init__(self, asmfile, allocReg, stmt):
         self.get = 10
         self.asmfid = open(asmfile,'w')
         self.allocReg = allocReg
-        self.Dict = Dict
+        self.Dict = {}
+        self.stmt = stmt
         self.ic = []
-        self.unusedVar = remVar
+        # self.unusedVar = remVar
         self.labelCount = 0
         self.labelStack = []
         self.ifLabelStack = []
@@ -38,6 +39,7 @@ class CodeGen:
         elif type == 'loop2':
             return self.loop2LabelStack[-1]
 
+    ## Deprecated ##
     ## Sbrk system call - To Allocate memory ##
     def allocMem(self, bytes):
         return '; ## Allocating Memory ##; li $a0, %s; li $v0, 9; syscall;;' %(bytes)
@@ -46,17 +48,20 @@ class CodeGen:
         self.asmfid.write(".globl main\n")
         self.asmfid.write("\n.data\n   str4: .asciiz \"\\n\" \n   memory: .word 0 1 2 3 4\n   stack: .word 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15\n\n")
         self.asmfid.write("\n.text\n")
-        self.asmfid.write("main:\n")
+        # self.asmfid.write("main:\n")
 
     def getExit(self):
         return ';exit:; ## Exit ##; la $a0, str4; li $v0, 4; syscall;; li $v0, 10; syscall;;'
 
+    ## Deprecated ##
     def inputInt(self):
         return '; ## Reading input from stdin ##;   li $v0, 5;   syscall; ## End of reading Input ##;'
 
+    ## Deprecated ##
     def printInt(self):
         return '; ## Adding New Line ##; ori $t8, $a0, 0; la $a0, str4; li $v0, 4; syscall;; ## Printing Integer ##; ori $a0, $t8, 0; li $v0, 1; syscall; ## End of Print ##;'
 
+    ## Deprecated ##
     def evalBinExp(self, var1, var2, op):
         ret = ''
         reg = ''
@@ -376,10 +381,12 @@ class CodeGen:
             reg = '$v0'
         return ret, reg
 
+    ## Deprecated ##
     def getHeap(self):
         ## Have to put the size in $a0 prior to this function call ##
         return '; ; ## Allocating heap using sbrk system call ##;   li $v0, 9;   syscall; ## End of sbrk system call ##;'
 
+    ## Deprecated ##
     def evaluateExpression(self, list):
         res = ''
         reg = ''
@@ -528,198 +535,117 @@ class CodeGen:
         return self.loop2LabelStack.pop()
 
     def generateIntermediateCode(self):
-        memcount = 0
-        memory = {}
-        forStart = 0
-        '''
-        self.allocReg['a'] = 't0'
-        self.allocReg['i'] = 't1'
-        self.allocReg['j'] = 't2'
-        self.allocReg['k'] = 't3'
-        ret, reg = self.evaluateExpression(['a','[','BINARY -', 'i', '1', ']','[','j',']','[','k',']'])
-        print ret
-        print reg
-        sys.exit(-1)
-        '''
-        for key in self.Dict.keys():
-            lis = []
-            val = self.Dict[key]
-            if len(val) <= 0:
+        # print self.stmt
+        # print
+        # print
+        for line in self.stmt:
+            if 'variable_' in line:
+                list = re.split(' ', line)
+                if 'variable_' in list[1]:
+                    varList = re.sub('variable_', '', list[1])
+                    var = re.sub(',', '', varList)
+                    reg = self.allocReg[var]
+                    line = re.sub('variable_'+var, '$'+reg, line)
+                    line = str('  '+line)
+                    # print line
+                elif 'variable_' in list[2]:
+                    varList = re.sub('variable_', '', list[2])
+                    var = re.sub(',', '', varList)
+                    reg = self.allocReg[var]
+                    line = re.sub('variable_'+var, '$'+reg, line)
+                    line = str('  '+line)
+                    # print line
+
+            ## IF - ELSE Block Handling ##
+            elif line == 'BRANCH LABEL_IF_ELSE' or line == 'BRANCH LABEL_IF':
+                label = self.genLabel()
+                self.ifLabelStack.append(label)
                 continue
-            if 'memory' not in val:
-                if len(val) > 1 and val[1] == '=':
-                    if val[2] != 'new':
-                        ret, reg = self.evaluateExpression(val)
-                        if ret:
-                            lis.append(ret)
-                    else:
-                        # print "Array Initialization.!"
-                        ret, reg = self.evaluateExpression(val[5:-1])
-                        if ret:
-                            lis.append(ret)
-                        if reg:
-                            lis.append(';   ori $a0, %s, 0' %reg)
-                            lis.append(self.getHeap())
+            elif '__IF_LABEL__' in line and line != 'b __IF_LABEL__':
+                label = self.ifLabelStack[-1]
+                line = re.sub('__IF_LABEL__', label, line)
+                line = str('  '+line)
+            elif line == 'b __IF_LABEL__':
+                ## This is taken care in ELSE ##
+                continue
+            elif line == 'BRANCH LABEL_ELSE':
+                label = self.genLabel()
+                line = str('  b '+label+';'+self.getIfLabel()+':'+';')
+                self.ifLabelStack.append(label)
+            elif line == 'BRANCH LABEL_IF_ELSE_END' or line == 'BRANCH LABEL_IF_END':
+                ## Just Pops the top most label ##
+                line = ';%s:;' %self.getIfLabel()
 
-                elif val[0] == 'print':
-                    ret, reg = self.evaluateExpression(val)
-                    if ret:
-                        lis.append(ret)
-                    if reg:
-                        if reg not in ['$HI', '$LO']:
-                            lis.append('; ori $a0, %s, 0; ' %(reg))
-                        else:
-                            if reg == '$LO':
-                                lis.append('; mflo $a0;')
-                            else:
-                                lis.append('; mfhi $a0;')
-                        lis.append('; ori $t8, $a0, 0;')
-                        lis.append(self.printInt())
-                elif len(val) > 2 and (val[1] == '--' or val[1] == '++' or val[2] == '--' or val[2] == '++'):
-                    ret, reg = self.evaluateExpression(val)
-                    if ret:
-                        lis.append(ret)
-                elif val[0] == 'if':
-                    label = self.genLabel()
-                    self.ifLabelStack.append(label)
+            ## For Loops Handling ##
+            elif line == 'BRANCH LABEL_FOR':
+                line = str(';## For Loop ##; ')
+                label = self.genLabel()
+                self.loopLabelStack.append(label)
+                label2 = self.genLabel()
+                self.loop2LabelStack.append(label2)
+                line += str(';%s:;' %label)
+            elif '__FOR_LABEL__' in line:
+                label = self.loop2LabelStack[-1]
+                line = re.sub('__FOR_LABEL__', label, line)
+                line = str('  '+line)
+            elif line ==  '__FOR_LABEL_START__' or line == 'b __FOR_LABEL_START__':
+                ## This is handled in FOR_END ##
+                continue
+            elif line == 'BRANCH LABEL_FOR_END':
+                line = str(';  b %s' %self.getLoopLabel())
+                line += str(';## End of For LOOP ##;')
+                line += str(';%s:;' %self.getLoop2Label())
 
-                    ret, reg = self.evaluateExpression(val[1:])
-                    if ret:
-                        lis.append(ret)
-                        if reg not in ['$HI', '$LO']:
-                            ## Branch based on reg ##
-                            lis.append('; beq %s, $zero, %s; ' %(reg, label))
-                        else:
-                            if reg == '$LO':
-                                lis.append('; mflo $t8;')
-                                lis.append('; beq $t8, $zero, %s; ' %label)
-                            else:
-                                lis.append('; mfhi $t8;')
-                                lis.append('; beq $t8, $zero, %s; ' %label)
-                    elif reg:
-                        if reg not in ['$HI', '$LO']:
-                            ## Just Branch ##
-                            lis.append('; blez %s, %s; ' %(reg, label))
-                        else:
-                            if reg == '$LO':
-                                lis.append('; mflo $t8;')
-                                lis.append('; blez $t8, %s; ' %label)
-                            else:
-                                lis.append('; mfhi $t8;')
-                                lis.append('; blez $t8, %s; ' %label)
-                elif val[0] == 'if_end' or val[0] == 'if_else_end':
-                    lis.append(';%s:;' %self.getIfLabel())
-                elif val[0] == 'else':
-                    label = self.genLabel()
-                    lis.append('; beq $zero, $zero, %s; ' %(label))
-                    lis.append(';%s:;' %self.getIfLabel())
-                    self.ifLabelStack.append(label)
-                elif val[0] == 'LOOP':
-                    label = self.genLabel()
-                    self.loopLabelStack.append(label)
-                    label2 = self.genLabel()
-                    self.loop2LabelStack.append(label2)
-                    lis.append(';%s:;' %label)
-                    ret, reg = self.evaluateExpression(val[1:])
-                    if ret:
-                        lis.append(ret)
-                    if reg:
-                        if reg not in ['$HI', '$LO']:
-                            lis.append('; beq %s, $zero, %s; ' %(reg, label2))
-                        else:
-                            if reg == '$LO':
-                                lis.append('; mflo $t8;')
-                                lis.append('; beq $t8, $zero, %s; ' %label2)
-                            else:
-                                lis.append('; mfhi $t8;')
-                                lis.append('; beq $t8, $zero, %s; ' %label2)
+            ## While Loop Handling ##
+            elif line == 'BRANCH LABEL_WHILE':
+                line = str(';## While Loop ##; ')
+                label = self.genLabel()
+                self.loopLabelStack.append(label)
+                label2 = self.genLabel()
+                self.loop2LabelStack.append(label2)
+                line += str(';%s:;' %label)
+            elif '__WHILE_LABEL__' in line:
+                label = self.loop2LabelStack[-1]
+                line = re.sub('__WHILE_LABEL__', label, line)
+                line = str('  '+line)
+            elif line ==  '__WHILE_LABEL_START__' or line == 'b __WHILE_LABEL_START__':
+                ## This is handled in WHILE_END ##
+                continue
+            elif line == 'BRANCH LABEL_WHILE_END':
+                line = str(';  b %s' %self.getLoopLabel())
+                line += str(';## End of While LOOP ##;')
+                line += str(';%s:;' %self.getLoop2Label())
 
-                elif val[0] == 'END_LOOP':
-                    lis.append('; beq $zero, $zero, %s' %self.getLoopLabel())
-                    lis.append(';%s:;' %self.getLoop2Label())
-
-                ## DO WHILE ##
-                elif val[0] == 'LOOP_DO':
-                    lis.append(';## Do While LOOP ##; ')
-                    label = self.genLabel()
-                    self.loopLabelStack.append(label)
-                    lis.append(';%s:;' %label)
-                elif val[0] == 'END_LOOP_DO':
-                    ret, reg = self.evaluateExpression(val[1:])
-                    if ret:
-                        lis.append(ret)
-                    if reg:
-                        if reg not in ['$HI', '$LO']:
-                            lis.append('; bne %s, $zero, %s; ' %(reg, self.getLoopLabel()))
-                        else:
-                            if reg == '$LO':
-                                lis.append('; mflo $t8;')
-                                lis.append('; bne $t8, $zero, %s; ' %self.getLoopLabel())
-                            else:
-                                lis.append('; mfhi $t8;')
-                                lis.append('; bne $t8, $zero, %s; ' %self.getLoopLabel())
-
-                ## For LOOP ##
-                elif val[0] == 'LOOP_FOR':
-                    lis.append(';## For LOOP ##; ')
-                    label = self.genLabel()
-                    self.loopLabelStack.append(label)
-                    label2 = self.genLabel()
-                    self.loop2LabelStack.append(label2)
-                    lis.append(';%s:;' %label)
-                    if '=' not in val:
-                        ret, reg = self.evaluateExpression(val[1:])
-                        if ret:
-                            lis.append(ret)
-                    else:
-                        eqIdx = val.index('=')
-                        defn = val[eqIdx-1]
-                        ret, reg = self.evaluateExpression(val[eqIdx+1:])
-                        if ret:
-                            lis.append(ret)
-                            lis.append('; ori $%s, %s, 0; ' %(self.allocReg[defn], reg))
-                    forStart = 2
-                elif val[0] == 'END_LOOP_FOR':
-                    lis.append('; beq $zero, $zero, %s' %self.getLoopLabel())
-                    lis.append(';## End of For LOOP ##;')
-                    lis.append(';%s:;' %self.getLoop2Label())
-
-                if forStart > 0 and val[0] != 'LOOP_FOR' and val[0] != 'END_LOOP_FOR':
-                    forStart -= 1
-                    if val:
-                        ret, reg = self.evaluateExpression(val)
-                    if ret:
-                        lis.append(ret)
-                    if forStart == 1:
-                        ## Condition Expression ##
-                        if reg:
-                            if reg not in ['$HI', '$LO']:
-                                lis.append('; beq %s, $zero, %s; ' %(reg, self.peekLabel('loop2')))
-                            else:
-                                if reg == '$LO':
-                                    lis.append('; mflo $t8;')
-                                    lis.append('; beq $t8, $zero, %s; ' %self.peekLabel('loop2'))
-                                else:
-                                    lis.append('; mfhi $t8;')
-                                    lis.append('; beq $t8, $zero, %s; ' %self.peekLabel('loop2'))
+            ## Do-while Loop Handling ##
+            elif line == 'BRANCH LABEL_DO_WHILE':
+                line = str(';## Do-while Loop ##; ')
+                label = self.genLabel()
+                self.loopLabelStack.append(label)
+                line += str(';%s:;' %label)
+            elif '__DO_WHILE_LABEL__' in line:
+                label = self.loopLabelStack.pop()
+                line = re.sub('__DO_WHILE_LABEL__', label, line)
+                line = str('  '+line)
+            elif line ==  '__DO_WHILE_LABEL_START__' or line == 'b __DO_WHILE_LABEL_START__':
+                ## This is handled in DO_WHILE_END ##
+                continue
+            elif line == 'BRANCH LABEL_DO_WHILE_END':
+                line = str(';## End of Do-while LOOP ##;')
+            elif line == 'BLOCK_START' or line == 'BLOCK_END' or\
+               line == 'UNARY START' or line == 'UNARY END' or \
+               line == 'BINARY START' or line == 'BINARY END' or \
+               line == 'PRINT_START' or line == 'PRINT_END' or \
+               line == 'FUNCTION_BLOCK':
+                continue
+            elif line == 'FUNCTION_BLOCK_END':
+               line = ';'
             else:
-                ## It is either X = memory or memory = x ##
-                if val[0] == 'memory':
-                    ## Allocate Memory - 4 Bytes (as it is an integer) ##
-                    temp = val[2:]
-                    memory[temp[0][:-1]] = memcount
-                    lis.append(";## Storing Register Values to Memory ##; la $t8, memory;")
-                    lis.append(" sw $%s, %d($t8);" %(self.allocReg[temp[0]], memory[temp[0][:-1]]))
-                    memcount += 4
-                elif val[2] == 'memory':
-                    temp = val[0:]
-                    lis.append(";## Loading Register Values from Memory ##; la $t8, memory;")
-                    lis.append(" lw $%s, %d($t8);" %(self.allocReg[temp[0]], memory[temp[0][:-1]]))
+                if ':' not in line and '#' not in line:
+                    line = str('  '+line)
 
-            ## Appending to main list ##
-            self.ic.append(lis)
-        for line in self.ic:
-            print line
+            self.ic.append(line)
+        # print self.ic
+        # sys.exit(-1)
 
     def generateASM(self):
         self.generateHeaders()
@@ -728,6 +654,7 @@ class CodeGen:
                 ## If Label has spaces, code doesnt work, so removing leading spaces ##
                 newLine = re.sub(r';\s+LABEL',';LABEL', line)
                 self.asmfid.write(re.sub(';', '\n', newLine))
+            self.asmfid.write('\n')
         self.asmfid.write(re.sub(';', '\n', self.getExit()))
         ## Closing the opened file descriptors. ##
         self.asmfid.close()

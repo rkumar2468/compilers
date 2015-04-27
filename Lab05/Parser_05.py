@@ -159,7 +159,7 @@ class Formal:
         self.formal = formal
 
     def genCode(self):
-        global sta_arg, fun_param_dict
+        global sta_arg, fun_param_dict, currBlock
         if self.var.var not in blockVar[0]:
             fun_param_dict[self.var.var] = int(sta_arg)*4
         sta_arg += 1
@@ -488,9 +488,11 @@ class Primary:
 
     def genCode(self):
         if self.exp == 'true':
-            return 'true'
+            intermediateCode.append('li $t8, 1')
+            return '1'
         elif self.exp == 'false':
-            return 'false'
+            intermediateCode.append('li $t8, 1')
+            return '0'
         return self.exp.genCode()
 
 class FUNCALL:
@@ -884,11 +886,11 @@ class DO_WHILE:
 
     def genCode(self):
         intermediateCode.append('BRANCH LABEL_DO_WHILE')
-        intermediateCode.append('__WHILE_LABEL_START__')
+        intermediateCode.append('__DO_WHILE_LABEL_START__')
         self.stmt.genCode()
         self.exp.genCode()
-        intermediateCode.append('beq $t8, $zero, __WHILE_LABEL__')
-        intermediateCode.append('b __WHILE_LABEL_START__')
+        intermediateCode.append('beq $t8, $zero, __DO_WHILE_LABEL__')
+        intermediateCode.append('b __DO_WHILE_LABEL_START__')
         ## POP-1 While Label ##
         intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
         ## POP-2 While Label ##

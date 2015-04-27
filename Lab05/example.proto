@@ -1,10 +1,13 @@
 int f;
 int hi(int x, int y)
 {
-    int a;
+    int a, f;
+    bool b;
+    b = true;
     a = input();
     for (;a<10;a++)
         print(a);
+    f = 11;
     return f;
 }
 
@@ -14,19 +17,32 @@ void main()
     {
         int x;
         int x1;
+        int raj;
+        x1 = 12;
+        c = 11;
         {
             int f;
             int []a;
+            // int a;
             int x;
             a = new int [10];
+            x = 15;
+            f = 21;
+            x1 = 100;
             hi(x,x1);
             print(x+f);
+            if (x == 10)
+            then
+                f = 54;
+            else
+                f = 45;
         }
         for(x=10;x<11;x++)
             print(x);
-        while(x==11)
         do
+        {
             print (x);
+        }while(x==11);
         f = 10;
     }
     return 0;

@@ -58,21 +58,23 @@ if __name__ == '__main__':
 
     ## Static Semantic Analysis ##
     print "Intermediate Code: ", Parser_05.intermediateCode
-
-    '''
-    ## Live Analysis ##
+    print
+    print
+    # '''
+    # Live Analysis ##
     import liveanalysis
-    live = liveanalysis.LiveAnalysis(Parser.intermediateCode)
+    live = liveanalysis.LiveAnalysis(Parser_05.intermediateCode)
     live.run()
     print live.allocReg
-    print live.Dict
+    # print live.Dict
 
     asmfile = fileName.split('.')[0]+'.asm'
     removeVariables = []
 
+    # '''
     ## Final Code Generation ##
     import CGen
-    cgen = CGen.CodeGen(asmfile, live.allocReg, live.Dict, removeVariables)
+    cgen = CGen.CodeGen(asmfile, live.allocReg, live.stmt)
     cgen.generateIntermediateCode()
     cgen.generateASM()
     # '''

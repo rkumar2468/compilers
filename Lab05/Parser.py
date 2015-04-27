@@ -574,11 +574,11 @@ class DO_WHILE:
 
     def genCode(self):
         intermediateCode.append('BRANCH LABEL_DO_WHILE')
-        intermediateCode.append('__WHILE_LABEL_START__')
+        intermediateCode.append('__DO_WHILE_LABEL_START__')
         self.stmt.genCode()
         self.exp.genCode()
-        intermediateCode.append('beq $t8, $zero, __WHILE_LABEL__')
-        intermediateCode.append('b __WHILE_LABEL_START__')
+        intermediateCode.append('beq $t8, $zero, __DO_WHILE_LABEL__')
+        intermediateCode.append('b __DO_WHILE_LABEL_START__')
         ## POP-1 While Label ##
         intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
         ## POP-2 While Label ##

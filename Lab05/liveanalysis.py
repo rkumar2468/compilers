@@ -36,6 +36,9 @@ class LiveAnalysis:
         self.unaryOps = ['-', '!']
         self.types = {}
         self.symbols = ['new', 'int', 'bool', '[', ']']
+        self.nonArrayVar = sets.Set([])
+        self.memory = {}
+        self.memcount = 0
 
     def removeLinesFromStatement(self, stmt, idx, var):
         countVar = stmt.count(var)
@@ -53,6 +56,40 @@ class LiveAnalysis:
                 # print "Removing ", stmt[newIdx]
                 stmt.pop(newIdx)
         # print stmt
+        return stmt
+
+    def checkIfVarUsed(self, stmt, var):
+        idx = 0
+        length = len(stmt)
+        # while True:
+        for i in stmt:
+            if 'variable_'+var in i:
+                lis = re.split(' ', i)
+                # print i, " <--> ", lis[2], " <--> "
+                if lis[2] == 'variable_'+var+',':
+                    # print "Returning 0 for %s " %var
+                    return 0
+        return -1
+
+    def removeElementsBasedOnVar(self, stmt, var):
+        tempStmt = []
+        for i in stmt:
+            if 'variable_'+var+',' in i:
+                # print "Removing ", i
+                continue
+            tempStmt.append(i)
+        return tempStmt
+
+    def removeUnusedAssignments2(self, stmt):
+        print self.nonArrayVar
+        print
+        print
+        for i in self.nonArrayVar:
+            # print "Variable Checking ", i, "\n"
+            # self.checkIfVarUsed(stmt, i)
+            if self.checkIfVarUsed(stmt, i) != 0:
+                # print "variable %s not used - so removing " %i
+                stmt = self.removeElementsBasedOnVar(stmt, i)
         return stmt
 
     def removeUnusedAssignments(self, stmt):
@@ -394,6 +431,7 @@ class LiveAnalysis:
         self.inDict = {}
         self.outDict = {}
         self.variables = sets.Set([])
+        self.nonArrayVar = sets.Set([])
         self.lineno = 0
         self.graph = {}
         self.allocReg = {}
@@ -568,6 +606,7 @@ class LiveAnalysis:
 
     # Actual Analysis for each line #
     def graphGen(self):
+        '''
         for key in self.Dict.keys():
             list = self.Dict[key]
             length = len(list)
@@ -622,20 +661,66 @@ class LiveAnalysis:
 
             self.variables = self.variables.union(sets.Set(self.Def))
             self.variables = self.variables.union(sets.Set(self.Use))
-            # print self.variables, "      Variales"
+            # print self.variables, "      Variables"
             self.defDict[key] = self.Def
             self.useDict[key] = self.Use
             self.Def = []
             self.Use = []
 
+        '''
+        lno = 0
+        for line in self.stmt:
+            # print line
+            if 'variable_' in line:
+                # print line
+                list = re.split(' ', line)
+                if 'variable_' in list[1]:
+                    # print lno, list[1]
+                    end = list[1].index(',')
+                    var = list[1][9:end]
+                    self.variables = self.variables.union(sets.Set([var]))
+                    if list[0] == 'ori':
+                        self.defDict[lno] = [var]
+                        self.useDict[lno] = []
+                    elif list[0] == 'sw':
+                        ## memory = variable ##
+                        # print list
+                        self.useDict[lno] = [var]
+                        self.defDict[lno] = []
+                    elif list[0] == 'lw':
+                        ## variable = memory ##
+                        # print list
+                        self.defDict[lno] = [var]
+                        self.useDict[lno] = []
+                elif 'variable_' in list[2]:
+                    # print lno, list[2]
+                    end = list[2].index(',')
+                    var = list[2][9:end]
+                    self.variables = self.variables.union(sets.Set([var]))
+                    if list[0] == 'ori':
+                        self.useDict[lno] = [var]
+                        self.defDict[lno] = []
+            else:
+                self.defDict[lno] = []
+                self.useDict[lno] = []
+            lno += 1
+        self.lineno = lno
+        # print self.variables
 
+        # print self.useDict
+        # for i in range(lno):
+        #     if self.defDict[i+1]:
+        #         print "Definitions: ", self.defDict[i+1]
+        #     if self.useDict[i+1]:
+        #         print "Use: ", self.useDict[i+1]
+        # sys.exit(-1)
         # Computing In and Out at each Line #
         # in(s) = use(s) U (out(s) - def(s))
         # out(s) = U of all successors of in(s)
         ## For Loops and Control Structures ##
         while True:
             tempInDict = copy.deepcopy(self.inDict)
-        # self.lineno = len(self.inDict)
+            # self.lineno = len(self.inDict)
             for i in range(self.lineno):
                 self.Def = self.defDict[self.lineno - i - 1]
                 self.Use = self.useDict[self.lineno - i - 1]
@@ -656,9 +741,9 @@ class LiveAnalysis:
             if tempInDict == self.inDict:
                 break
 
-        for i in range(self.lineno):
-            print "Line: ", self.Dict[i], " In: ", self.inDict[i], " Use : ", self.useDict[i], " Def: ", self.defDict[i]
-        # print "In Dict: ", self.inDict[]
+        # for i in range(self.lineno):
+        #     print " In: ", self.inDict[i], " Use : ", self.useDict[i], " Def: ", self.defDict[i]
+        # print "In Dict: ", self.inDict
         # print "Out Dict: ", self.outDict
         # print variables
 
@@ -701,6 +786,7 @@ class LiveAnalysis:
                 max = length
         return node
 
+    ## Deprecated ##
     def reconstructGraph(self, element):
         list1 = ['memory', '=', element+'1',';']
         list2 = [element+'2','=','memory',';']
@@ -751,6 +837,7 @@ class LiveAnalysis:
         return ret
 
     def reconstructGraph2(self, element):
+        '''
         count = 1
         length = len(self.stmt)
         list1 = ['memory', '=', element,';']
@@ -788,6 +875,45 @@ class LiveAnalysis:
                 self.stmt = copy.deepcopy(temp)
                 length += 4
             count += 1
+            '''
+        # print self.stmt
+        # print
+        self.memory[element] = self.memcount
+        self.memcount += 4
+        list = ['la $t8, memory']
+        val1 = ['sw variable_%s, %d($t8)' %(element, self.memory[element])]
+        val2 = ['lw variable_%s, %d($t8)' %(element, self.memory[element])]
+        # list.append(val)
+        index = 0
+        tempList = []
+        length = len(self.stmt)
+        for lno in range(length):
+            line = self.stmt[index]
+            if 'variable_'+element+',' in line:
+                # print "Start at lno: ", lno
+                linelist = re.split(' ', line)
+                if linelist[1] == 'variable_'+element+',':
+                    ## memory = variable ##
+                    # list.append(val1)
+                    # print self.stmt[:index+1]
+                    # print
+                    # print
+                    # print self.stmt[index+1:]
+                    tempList = self.stmt[:index+1] + list + val1 + self.stmt[index+1:]
+                    index += 2
+                    # lno += 3
+                else:
+                    ## variable = memory ##
+                    # list.append(val2)
+                    tempList = self.stmt[:index] + list + val2 + self.stmt[index:]
+                    index += 2
+                    # lno += 3
+                if tempList:
+                    self.stmt = tempList
+                    # print "Updated line at lno: ", lno
+            index += 1
+        # print self.stmt
+        # sys.exit(-1)
 
     def graphColoring(self, k):
         g = self.graph
@@ -811,6 +937,7 @@ class LiveAnalysis:
                 return -1
         return 0
 
+    ## Deprecated, this is handled in Parser ##
     def replaceBoolValues(self):
         if 'true' in self.stmt or 'false' in self.stmt:
             self.stmt = ['1' if x == 'true' else x  for x in self.stmt]
@@ -818,23 +945,155 @@ class LiveAnalysis:
         # print self.stmt
         # sys.exit(0)
 
+    ## For Homework-05 ##
+    def removeTypes(self, list):
+        # tempList = copy.deepcopy(list)
+        # print list
+        # print
+        # print
+        array = 0
+        tempList = []
+        typeStart = 0
+        for i in list:
+            if 'TYPE' in i:
+                typeStart = 1
+                if '[]' in i:
+                    array = 1
+                else:
+                    array = 0
+                # tempList.remove(i)
+                continue
+            if typeStart == 1 and i != ';':
+                if array != 1 and i != ',':
+                    self.nonArrayVar.add(i)
+                # tempList.remove(i)
+                continue
+            else:
+                # if typeStart == 1 and i == ';':
+                #     continue
+                tempList.append(i)
+                typeStart = 0
+        while ';' in tempList:
+            tempList.remove(';')
+        # print self.nonArrayVar
+        return tempList
+
+    def updateDict(self, dict, key, val):
+        if key in dict.keys():
+            dict[key].append(val)
+        else:
+            dict[key] = [val]
+        return dict
+
+    def updateVarBasedOnBlock(self, i, updt, blockno, varDict):
+        # i - string
+        # updt - list of variables to be updated
+        # blockno - variable should be appended with var_blockno
+        if len(updt) == 0:
+            return i
+        else:
+            for var in updt:
+                if 'variable_'+var+',' in i:
+                    ## Replace variable_$var with variable_$var_blockno ##
+                    # i = re.sub('variable_'+var,'variable_'+var+'_'+str(blockno), i)
+                    i = re.sub('variable_'+var+',','variable_'+var+'_'+str(varDict[var])+',', i)
+                    # print
+                    # print "Updated to - ", i
+                elif i == var:
+                    ## For Type - Declarations ##
+                    ## Later stages, variables are enumerated for further analysis ##
+                    # i = re.sub(var,var+'_'+str(blockno), i)
+                    i = re.sub(var,var+'_'+str(varDict[var]), i)
+                    # print
+                    # print "Updated to - ", i
+        return i
+
+    def checkIfVarIsAlreadyPresent(self, varDict, blockno, i):
+        # i - Line to be validated for the variables
+        for block in range(blockno):
+            if block in varDict.keys():
+                if i in varDict[block]:
+                    return True
+        return False
+
+    def blockVariableUpdates(self, stmt):
+        blockno = 0
+        typeStart = 0
+        varDict = {}
+        updt = []
+        tempList = []
+        variables = {}
+        for i in stmt:
+            if i == 'BLOCK_START':
+                blockno +=1
+                if blockno in varDict.keys():
+                    varDict.pop(blockno)
+                # continue
+            elif i == 'BLOCK_END':
+                blockno -= 1
+                updt = []
+                # continue
+            elif 'TYPE' in i:
+                typeStart = 1
+                # continue
+            elif typeStart == 1 and i != ';':
+                if i != ',':
+                    # Have to update the updt list based on redundancy #
+                    if self.checkIfVarIsAlreadyPresent(varDict, blockno, i):
+                        ## Already Present ##
+                        ## Update updt list accordingly ##
+                        ## As `i' is a variable so no need to do extra parsing ##
+                        # print "Working on variable: ", i
+                        updt.append(i)
+                    varDict = self.updateDict(varDict, blockno, i)
+                    if i in variables.keys():
+                        variables[i] += 1
+                    else:
+                        variables[i] = 1
+                # continue
+            else:
+                typeStart = 0
+            ## Generic updates on `i' based on the block ##
+            i = self.updateVarBasedOnBlock(i, updt, blockno, variables)
+            tempList.append(i)
+        print varDict
+        # print
+        # print tempList
+        return tempList
+
+
     # Starts the register allocation algorithm based on the number of registers #
     def run(self):
         ret = -1
         count = 0
-        self.replaceBoolValues()
-        self.staticSemanticCheck()
-        self.buildDictionary()
+        ## Bool values are already replaced as 0 and 1 in parser ##
+        # self.replaceBoolValues()
+        # self.staticSemanticCheck()
+        # self.buildDictionary()
+
         newstmt = copy.deepcopy(self.stmt)
+        ## Renames the variables if the current block  ##
+        ## has a variable which is defined in previous ##
+        ## blocks. This avoids confusion in liveness   ##
+        newstmt = self.blockVariableUpdates(newstmt)
+        newstmt = self.removeTypes(newstmt)
+        # print newstmt
+        newstmt = self.removeUnusedAssignments2(newstmt)
+
         ## Define Before Use check ##
-        self.semanticsAssignmentCheck()
-        self.stmt = self.removeUnusedAssignments(newstmt)
+        ## Will do once the liveness is completed ##
+        # self.semanticsAssignmentCheck()
+
+        # self.stmt = self.removeUnusedAssignments(newstmt)
+        self.stmt = newstmt
+
         while ret != 0:
-            self.buildDictionary()
             self.graphGen()
             count += 1
-            ret = self.graphColoring(7)
+            ret = self.graphColoring(3)
             if ret != 0:
+                print "Retrying..!"
+                # sys.exit(-1)
                 self.reconstructGraph2(self.spill)
                 self.reset()
             else:
@@ -842,3 +1101,4 @@ class LiveAnalysis:
             if count == 10:
                 print "\nRegister Allocation Failed due to unavailability of required number of registers.!"
                 sys.exit(-1)
+        print "Liveness analysis completed successfully.!"
