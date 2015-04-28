@@ -13,6 +13,61 @@ currBlock = 0
 declared = 0
 mainFun = 0
 otherFun = 0
+types = {}
+currType = ''
+
+def getTypeValue(dict, val):
+    for key in dict.keys():
+        if val in dict[key]:
+            return key
+
+def getTypes(variable, block):
+    list = []
+    if block in types.keys():
+        typeV = getTypeValue(types[block], variable)
+        if typeV:
+            return typeV
+        else:
+            for i in range(block):
+                typeV = getTypeValue(types[block - i - 1], variable)
+                if typeV:
+                    return typeV
+    else:
+        for i in range(block):
+            typeV = getTypeValue(types[block - i - 1], variable)
+            if typeV:
+                return typeV
+
+def typeChecking(variable, type, block):
+    list = []
+    if block in types.keys():
+        try:
+            list = types[block][type]
+        except KeyError:
+            pass
+        if variable in list:
+            return True
+        else:
+            for i in range(block):
+                if i in types.keys():
+                    try:
+                       list = types[block - i - 1][type]
+                    except KeyError:
+                        continue
+                    if variable in list:
+                        return True
+            return False
+    else:
+        for i in range(block):
+            if i in types.keys():
+                try:
+                    list = types[block - i - 1][type]
+                except KeyError:
+                    continue
+                if variable in list:
+                    return True
+    return False
+
 
 def removeVarDeclFromDict():
     global blockVar, currBlock
@@ -67,10 +122,12 @@ class DECL:
         self.varlist = varlist
 
     def genCode(self):
-        global intermediateCode, declared
+        global intermediateCode, declared, currType
         declared = 1
-        intermediateCode.append('TYPE '+self.type.genCode())
+        currType = self.type.genCode()
+        intermediateCode.append('TYPE '+currType)
         self.varlist.genCode()
+        currType = ''
         intermediateCode.append(';')
         declared = 0
 
@@ -167,6 +224,18 @@ class Formal:
             self.formal.genCode()
         return sta_arg
 
+def addToTypesDict(variable, typeVal, blckno):
+    dictType = {}
+    if blckno in types.keys():
+            dictType = types[blckno]
+            if typeVal in dictType.keys():
+                dictType[typeVal].append(variable)
+            else:
+                dictType[typeVal] = [variable]
+    else:
+        dictType[typeVal] = [variable]
+        types[currBlock] = dictType
+
 class VARLIST:
     global intermediateCode
     def __init__(self, var, comma='', varlist=''):
@@ -175,8 +244,9 @@ class VARLIST:
         self.comma = comma
 
     def genCode(self):
-        global blockVar, currBlock
+        global blockVar, currBlock, types, currType
         name = self.var.genCode()
+        addToTypesDict(name, currType, currBlock)
         if currBlock in blockVar.keys():
             if name in blockVar[currBlock]:
                 print "Error: Variable %s declared more than once." %(name)
@@ -362,6 +432,7 @@ class Input:
     global intermediateCode
     def __init__(self):
         self.type = 'input'
+        self.TYPEV = 'input'
 
     def genCode(self):
         intermediateCode.append('## Reading input from stdin ##')
@@ -370,16 +441,24 @@ class Input:
         intermediateCode.append('ori $t8, $v0, 0')
         intermediateCode.append('## End of input ##')
 
+    def gettype(self):
+        return self.TYPEV
+
 ## Return Values ##
 class LHS:
     global intermediateCode
     def __init__(self, id_or_array):
         self.id_or_array = id_or_array
         self.type = 'lhs'
+        self.TYPEV = ''
 
     def genCode(self):
         ret = self.id_or_array.genCode()
+        self.TYPEV = self.id_or_array.gettype()
         return ret
+
+    def gettype(self):
+        return self.TYPEV
 
 class ArrayAccess:
     global intermediateCode
@@ -387,6 +466,7 @@ class ArrayAccess:
         self.primary = primary
         self.exp = exp
         self.type = 'arrayaccess'
+        self.TYPEV = ''
 
     def genCode(self):
         self.primary.genCode()
@@ -396,10 +476,17 @@ class ArrayAccess:
         ## So its safe to use here ##
         intermediateCode.append('ori $a0, $t8, 0')
         self.exp.genCode()
+        if self.exp.gettype() != 'int':
+            print "Error: Array index is not an integer.!"
+            sys.exit(-1)
         intermediateCode.append('mult $t8, 4')
         intermediateCode.append('mflo $t9')
         intermediateCode.append('add $t8, $a0, $t9')
         # return ret
+        self.TYPEV = self.primary.gettype()+'[]'
+
+    def gettype(self):
+        return self.TYPEV
 
 class SEOPT:
     def __init__(self, se=''):
@@ -425,6 +512,7 @@ class SE:
         self.exp = exp
         self.op = op
         self.type = 'se'
+        self.TYPEV = ''
 
     def genCode(self):
         global currBlock, blockVar, mainFun, fun_param_dict, otherFun, fun_param_count
@@ -465,18 +553,35 @@ class SE:
                     intermediateCode.append('sw $a0, 0($t8)')
                     # elif otherFun == 1:
 
+                if (not self.exp.gettype() == 'input') and self.lhs.gettype() != self.exp.gettype():
+                    print "Error: Type mismatch in the assignment.!"
+                    sys.exit(-1)
+
+            self.TYPEV = self.lhs.gettype()
+
         else:
             ## ++, -- will be handled here ##
             self.lhs.genCode()
+
+    def gettype(self):
+        return self.TYPEV
 
 class Expression:
     global intermediateCode
     def __init__(self, exp):
         self.exp = exp
         self.type = 'ae'
+        self.TYPEV = ''
 
     def genCode(self):
-        return self.exp.genCode()
+        # intermediateCode.append('EXPRESSION_START')
+        ret = self.exp.genCode()
+        self.TYPEV = self.exp.gettype()
+        # intermediateCode.append('EXPRESSION_END')
+        return ret
+
+    def gettype(self):
+        return self.TYPEV
 
 class Primary:
     global intermediateCode
@@ -485,15 +590,24 @@ class Primary:
         self.lparen = lparen
         self.rparen = rparen
         self.type = 'primary'
+        self.TYPEV = ''
 
     def genCode(self):
         if self.exp == 'true':
             intermediateCode.append('li $t8, 1')
+            self.TYPEV = 'bool'
             return '1'
         elif self.exp == 'false':
             intermediateCode.append('li $t8, 1')
+            self.TYPEV = 'bool'
             return '0'
-        return self.exp.genCode()
+
+        ret = self.exp.genCode()
+        self.TYPEV = self.exp.gettype()
+        return ret
+
+    def gettype(self):
+        return self.TYPEV
 
 class FUNCALL:
     global intermediateCode
@@ -548,6 +662,7 @@ class ARRAY:
         self.dimexpr = dimexpr
         self.dimstar = dimstar
         self.type = 'array'
+        self.TYPEV = ''
 
     def genCode(self):
         ## Base address will be in $t8 ##
@@ -560,6 +675,10 @@ class ARRAY:
         intermediateCode.append('syscall')
         intermediateCode.append('## End of sbrk system call ##')
         intermediateCode.append('ori $t8, $v0, 0')
+        self.TYPEV = self.TYPE.genCode()
+
+    def gettype(self):
+        return self.TYPEV
 
 ## Return Values ##
 class Number:
@@ -567,11 +686,15 @@ class Number:
     def __init__(self, val):
         self.value = val
         self.type = 'num'
+        self.TYPEV = 'int'
 
     def genCode(self):
         code = 'li $t8, %s' %(self.value)
         intermediateCode.append(code)
         return str(self.value)
+
+    def gettype(self):
+        return self.TYPEV
 
 ## No Return values ##
 class Unary_Ops:
@@ -581,19 +704,24 @@ class Unary_Ops:
         self.operand = operand
         self.type = 'uops'
         self.post= post
+        self.TYPEV = ''
 
     def genCode(self):
-        global intermediateCode, fun_param_count, fun_param_dict
+        global intermediateCode, fun_param_count, fun_param_dict, currBlock
         intermediateCode.append('UNARY START')
         ## Either LHS or Array ##
         ret = self.operand.genCode()
-
+        # print 'Return type of ret %s in unary ops: %s' %(ret, self.operand.gettype())
         if self.post == 0:
             ## Pre Operation ++i ##
             if self.op == '++':
                 intermediateCode.append('addi $t9, $t8, 1')
                 intermediateCode.append('ori $t8, $t9, 0')
                 if self.operand.type == 'variable' or self.operand.type == 'lhs':
+                    if typeChecking(ret, 'int', currBlock) == False:
+                        print "Error: Unary operation ++ cannot be performed on %s.\nType Error." %(ret)
+                        sys.exit(-1)
+
                     if mainFun == 1:
                         intermediateCode.append('ori variable_%s, $t9, 0' %(ret))
                     elif otherFun == 1:
@@ -608,11 +736,15 @@ class Unary_Ops:
                                 fun_param_count.append([fun, offset+1])
                                 fun_param_dict[ret] = (offset)*4
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
+                self.TYPEV = 'int'
             elif self.op == '--':
                 intermediateCode.append('li $t9, 1')
                 intermediateCode.append('sub $t9, $t8, $t9')
                 intermediateCode.append('ori $t8, $t9, 0')
                 if self.operand.type == 'variable' or self.operand.type == 'lhs':
+                    if typeChecking(ret, 'int', currBlock) == False:
+                        print "Error: Unary operation -- cannot be performed on %s.\nType Error." %(ret)
+                        sys.exit(-1)
                     if mainFun == 1:
                         intermediateCode.append('ori variable_%s, $t9, 0' %(ret))
                     elif otherFun == 1:
@@ -627,17 +759,27 @@ class Unary_Ops:
                                 fun_param_count.append([fun, offset+1])
                                 fun_param_dict[ret] = (offset)*4
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
+                self.TYPEV = 'int'
             elif self.op == '-':
+                if typeChecking(ret, 'int', currBlock) == False:
+                    print "Error: Unary operation - cannot be performed on %s.\nType Error." %(ret)
+                    sys.exit(-1)
                 intermediateCode.append('sub $t9, $zero, $t8')
                 intermediateCode.append('ori $t8, $t9, 0')
+                self.TYPEV = 'int'
             elif self.op == '!':
+                # print "Return Value : ", ret
                 intermediateCode.append('seq $t9, $t8, $zero')
                 intermediateCode.append('ori $t8, $t9, 0')
+                self.TYPEV = 'bool'
         else:
             ## Post Operation i++ ##
             if self.op == '++':
                 intermediateCode.append('addi $t9, $t8, 1')
                 if self.operand.type == 'variable' or self.operand.type == 'lhs':
+                    if typeChecking(ret, 'int', currBlock) == False:
+                        print "Error: Unary operation ++ cannot be performed on %s.\nType Error." %(ret)
+                        sys.exit(-1)
                     if mainFun == 1:
                         intermediateCode.append('ori variable_%s, $t9, 0' %(ret))
                     elif otherFun == 1:
@@ -652,10 +794,14 @@ class Unary_Ops:
                                 fun_param_count.append([fun, offset+1])
                                 fun_param_dict[ret] = (offset)*4
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
+                self.TYPEV = 'int'
             elif self.op == '--':
                 intermediateCode.append('li $t9, 1')
                 intermediateCode.append('sub $t9, $t8, $t9')
                 if self.operand.type == 'variable' or self.operand.type == 'lhs':
+                    if typeChecking(ret, 'int', currBlock) == False:
+                        print "Error: Unary operation -- cannot be performed on %s.\nType Error." %(ret)
+                        sys.exit(-1)
                     if mainFun == 1:
                         intermediateCode.append('ori variable_%s, $t9, 0' %(ret))
                     elif otherFun == 1:
@@ -670,14 +816,23 @@ class Unary_Ops:
                                 fun_param_count.append([fun, offset+1])
                                 fun_param_dict[ret] = (offset)*4
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
+                self.TYPEV = 'int'
             elif self.op == '-':
+                if typeChecking(ret, 'int', currBlock) == False:
+                    print "Error: Unary operation - cannot be performed on %s.\nType Error." %(ret)
+                    sys.exit(-1)
                 intermediateCode.append('sub $t9, $zero, $t8')
                 intermediateCode.append('ori $t8, $t9, 0')
+                self.TYPEV = 'int'
             elif self.op == '!':
+                # print "Return Value : ", ret
                 intermediateCode.append('seq $t9, $t8, $zero')
                 intermediateCode.append('ori $t8, $t9, 0')
-
+                self.TYPEV = 'bool'
         intermediateCode.append('UNARY END')
+
+    def gettype(self):
+        return self.TYPEV
 
 ## No Return values ##
 class Bin_Ops:
@@ -687,6 +842,7 @@ class Bin_Ops:
         self.left = left
         self.right = right
         self.op = operator
+        self.TYPEV = ''
 
     def genCode(self):
         self.left.genCode()
@@ -695,26 +851,31 @@ class Bin_Ops:
             self.right.genCode()
             intermediateCode.append('add $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'int'
         elif self.op == '-':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('sub $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'int'
         elif self.op == '*':
             intermediateCode.append('ori $v0, $t8, 0')
             self.right.genCode()
             intermediateCode.append('mult $t8, $v0')
             intermediateCode.append('mflo $t8')
+            self.TYPEV = 'int'
         elif self.op == '/':
             intermediateCode.append('ori $v0, $t8, 0')
             self.right.genCode()
             intermediateCode.append('div $t8, $v0')
             intermediateCode.append('mflo $t8')
+            self.TYPEV = 'int'
         elif self.op == '%':
             intermediateCode.append('ori $v0, $t8, 0')
             self.right.genCode()
             intermediateCode.append('div $t8, $v0')
             intermediateCode.append('mfhi $t8')
+            self.TYPEV = 'int'
         elif self.op == '||':
             intermediateCode.append('sne $t9, $t8, $zero')
             intermediateCode.append('bgez $t9, __LABEL__')
@@ -723,6 +884,7 @@ class Bin_Ops:
             intermediateCode.append('sne $t9, $t8, $zero')
             intermediateCode.append('__POP__LABEL__')
             intermediateCode.append('ori $t8, $t9, 0')
+            self.TYPEV = 'bool'
         elif self.op == '&&':
             intermediateCode.append('sne $t9, $t8, $zero')
             intermediateCode.append('beq $t9, $zero, __LABEL__')
@@ -731,36 +893,49 @@ class Bin_Ops:
             intermediateCode.append('sne $t9, $t8, $zero')
             intermediateCode.append('__POP__LABEL__')
             intermediateCode.append('ori $t8, $t9, 0')
+            self.TYPEV = 'bool'
         elif self.op == '==':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('seq $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
         elif self.op == '!=':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('sne $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
         elif self.op == '<':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('slt $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
         elif self.op == '<=':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('sle $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
         elif self.op == '>':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('sgt $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
         elif self.op == '>=':
             intermediateCode.append('ori $t9, $t8, 0')
             self.right.genCode()
             intermediateCode.append('sge $v0, $t9, $t8')
             intermediateCode.append('ori $t8, $v0, 0')
+            self.TYPEV = 'bool'
+        if self.left.gettype() != self.right.gettype():
+            print "Error: Binary operation of non-matched type variables.!"
+            sys.exit(-1)
+
+    def gettype(self):
+        return self.TYPEV
 
 ## Return Values ##
 class Names:
@@ -768,9 +943,11 @@ class Names:
     def __init__(self, var):
         self.var = var
         self.type = 'variable'
+        self.TYPEV = ''
 
     def genCode(self):
         global currBlock, blockVar, declared, fun_param_count, fun_param_dict
+        self.TYPEV = getTypes(self.var, currBlock)
         if declared == 1 or checkDeclaration(blockVar, currBlock, self.var):
             if mainFun == 1:
                 intermediateCode.append('ori $t8, variable_%s, 0' %(self.var))
@@ -790,6 +967,11 @@ class Names:
         else:
             print "Error: Variable %s used but not declared.!" %(self.var)
             sys.exit(-1)
+
+    def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = getTypes(self.var, currBlock)
+        return self.TYPEV
 
 ## Control Structures ##
 class IF:
@@ -1214,3 +1396,5 @@ def run(data):
     print "Block Var: ", blockVar
     print "Count Dict: ", fun_param_count
     print "Param Func: ", fun_param_dict
+    print "Types Dict: ", types
+    # sys.exit(-1)
