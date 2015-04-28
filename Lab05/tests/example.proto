@@ -6,7 +6,9 @@ int hi(int x, int y)
     b = true;
     a = input();
     for (;a<10;a++)
-        print(a);
+        print(a-10);
+    print (x);
+    print (y);
     f = 11;
     return f;
 }

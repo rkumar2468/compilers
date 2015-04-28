@@ -29,12 +29,18 @@ def getTypes(variable, block):
             return typeV
         else:
             for i in range(block):
-                typeV = getTypeValue(types[block - i - 1], variable)
+                try:
+                    typeV = getTypeValue(types[block - i - 1], variable)
+                except KeyError:
+                    continue
                 if typeV:
                     return typeV
     else:
         for i in range(block):
-            typeV = getTypeValue(types[block - i - 1], variable)
+            try:
+                typeV = getTypeValue(types[block - i - 1], variable)
+            except KeyError:
+                continue
             if typeV:
                 return typeV
 
@@ -67,7 +73,6 @@ def typeChecking(variable, type, block):
                 if variable in list:
                     return True
     return False
-
 
 def removeVarDeclFromDict():
     global blockVar, currBlock
@@ -134,10 +139,17 @@ class DECL:
 class TYPE:
     def __init__(self, type):
         self.type = type
+        # self.TYPEV = type
 
     def genCode(self):
         if isinstance(self.type, TYPE):
-            return self.type.type+'[]'
+            return self.type.gettype()+'[]'
+        else:
+            return self.type
+
+    def gettype(self):
+        if isinstance(self.type, TYPE):
+            return self.type.gettype()+'[]'
         else:
             return self.type
 
@@ -217,8 +229,20 @@ class Formal:
 
     def genCode(self):
         global sta_arg, fun_param_dict, currBlock
-        if self.var.var not in blockVar[0]:
-            fun_param_dict[self.var.var] = int(sta_arg)*4
+        name = self.var.var
+        if name not in blockVar[0]:
+            fun_param_dict[name] = int(sta_arg)*4
+
+        if currBlock in blockVar.keys():
+            if name in blockVar[currBlock]:
+                print "Error: Variable %s declared more than once." %(name)
+                sys.exit(-1)
+            blockVar[currBlock].append(name)
+        else:
+            blockVar[currBlock] = [name]
+
+        addToTypesDict(name, self.type.genCode(), currBlock)
+
         sta_arg += 1
         if self.formal:
             self.formal.genCode()
@@ -279,14 +303,22 @@ class DIMSTAR:
         self.lbrac = lbrac
         self.rbrac = rbrac
         self.dimstar = dimstar
+        self.TYPEV = ''
 
     def genCode(self):
         global intermediateCode
         if self.lbrac and self.rbrac:
             intermediateCode.append(self.lbrac)
             intermediateCode.append(self.rbrac)
+            self.TYPEV = '[]'
         if self.dimstar:
             self.dimstar.genCode()
+            self.TYPEV += self.dimstar.gettype()
+
+    def gettype(self):
+        if not self.TYPEV:
+            self.genCode()
+        return self.TYPEV
 
 class DIMEXPR:
     global intermediateCode
@@ -294,9 +326,13 @@ class DIMEXPR:
         self.lbrac = lbrac
         self.rbrac = rbrac
         self.exp = exp
+        self.TYPEV = '[]'
 
     def genCode(self):
         self.exp.genCode()
+
+    def gettype(self):
+        return self.TYPEV
 
 ## StmtSeq ##
 class Statements:
@@ -407,6 +443,9 @@ class Print:
         intermediateCode.append('syscall')
         intermediateCode.append('## End Of Printing Integer ##')
         intermediateCode.append('PRINT_END')
+        if self.exp.gettype() != 'int':
+            print "Error: Printing non integer values.!"
+            sys.exit(-1)
 
 class Block:
     global intermediateCode
@@ -581,6 +620,8 @@ class Expression:
         return ret
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.exp.gettype()
         return self.TYPEV
 
 class Primary:
@@ -607,6 +648,8 @@ class Primary:
         return ret
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.exp.gettype()
         return self.TYPEV
 
 class FUNCALL:
@@ -675,7 +718,9 @@ class ARRAY:
         intermediateCode.append('syscall')
         intermediateCode.append('## End of sbrk system call ##')
         intermediateCode.append('ori $t8, $v0, 0')
-        self.TYPEV = self.TYPE.genCode()
+        self.TYPEV = self.TYPE.genCode()+self.dimexpr.gettype()
+        if self.dimstar:
+            self.TYPEV += self.dimstar.gettype()
 
     def gettype(self):
         return self.TYPEV
