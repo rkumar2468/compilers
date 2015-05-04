@@ -1,0 +1,8 @@
+j = input();k = 5;g = j;h = k - 1;f = g * h;
+e = j;
+m = j;
+b = f;
+c = e + b;
+d = c;
+k = m + d;
+print(k + 1);

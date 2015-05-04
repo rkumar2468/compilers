@@ -1,0 +1,30 @@
+int hi()
+{
+    int x, y;
+    bool t;
+    x = 10;
+    t = false;
+    // x = -t;
+    // t++;
+    // --t;
+    t = !(x>10);
+    y = input();
+    // x = x + t;
+    if (y != 10)
+    then {
+        if (y > 10)
+        then
+            x = 10;
+        else
+            x = 19;
+        return 11;
+    } else {
+        print (x);
+        return 10;
+    }
+    // return 11;
+}
+void main()
+{
+    hi();
+}
