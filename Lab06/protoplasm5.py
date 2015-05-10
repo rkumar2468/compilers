@@ -10,7 +10,7 @@
 ## 4. STDIN/STDOUT: input/print                                                                         ##
 ##                                                                                                      ##
 ## Usage:											                                                	##
-##	python[.exe] protoplasm4.py <proto source filename>						                            ##
+##	python[.exe] protoplasm5.py <proto source filename>						                            ##
 ##													                                                    ##
 ## Name: 	    Rajendra Kumar Raghupatruni		    						                            ##
 ## SBU Net ID: 	rraghuaptrun				    						                                ##
@@ -19,25 +19,40 @@
 
 import sys, Parser_05
 
+copypropagation = 0
+constpropagation = 0
+loopinvariant = 0
+commonsubexpelim = 0
+
 def usage():
     print "\nUsage:"
-    print "python[.exe] protoplasm4.py <proto source file name>"
+    print "python[.exe] protoplasm5.py <proto source file name> [--opt=<on/off>]"
+    print "opt: constantpropagation copypropagation cselimination loopmotion inductionvariables"
+    print "Note: Induction Variables - not implemented"
 
 def commandlineCheck():
-    if len(sys.argv) != 2:
-        print "Error in number of arguments."
+    if len(sys.argv) < 2:
+        print "Error in number of arguments. ", len(sys.argv)
         usage()
         sys.exit(0)
+    else:
+        global copypropogation, copypropagation, loopinvariant, commonsubexpelim
+        if "--constantpropagation=on" in sys.argv:
+            constpropagation = 1
+        if "--copypropagation=on" in sys.argv:
+            copypropagation = 1
+        if "--cselimination=on" in sys.argv:
+            commonsubexpelim = 1
+        if "--loopmotion=on" in sys.argv:
+            loopinvariant = 1
 
 def readInput(fid):
     inp = ''
     for line in fid:
-        # print line
         inp += line
     return inp
 
 if __name__ == '__main__':
-
     ## Command Line Arguments Check ##
     commandlineCheck()
 
@@ -51,22 +66,24 @@ if __name__ == '__main__':
     ## Closing the opened file descriptor ##
     fid.close()
     if data:
-        Parser_05.run(data)
+        Parser_05.run(data, copypropagation, constpropagation, loopinvariant, commonsubexpelim)
     else :
         print "File: <%s> is empty.!" %(fileName)
         sys.exit(-1)
 
     ## Static Semantic Analysis ##
     print "Intermediate Code: ", Parser_05.intermediateCode
+    print copypropagation
     print
-    print
+
     # '''
     # Live Analysis ##
     import liveanalysis
-    live = liveanalysis.LiveAnalysis(Parser_05.intermediateCode)
+    live = liveanalysis.LiveAnalysis(Parser_05.intermediateCode, copypropagation, constpropagation, loopinvariant, commonsubexpelim)
     live.run()
     print live.allocReg
     # print live.Dict
+
 
     asmfile = fileName.split('.')[0]+'.asm'
     removeVariables = []

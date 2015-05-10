@@ -1,10 +1,11 @@
 ## Parsing Start    ##
 ## tokens are already available here ##
-import sys
+import sys, copy
 import ply.yacc as yacc
 from lexAndParse import tokens
 
 intermediateCode = []
+tempCode = []
 sta_arg = 0
 fun_param_dict = {}
 fun_param_count = []
@@ -15,6 +16,46 @@ mainFun = 0
 otherFun = 0
 types = {}
 currType = ''
+# constantPropagation = {}
+loopblock = 0
+optBlock = 0
+optBlockVar = {}
+
+constPropStack = {}
+
+# For Constant propagation #
+def checkIfVarInStackDict(var, stackDict, block):
+    if block == 0 and block in stackDict.keys():
+        if var in stackDict[block].keys():
+            return True
+    for i in range(block+1):
+        cur = block - i
+        try:
+            if var in stackDict[cur].keys():
+                return True
+        except KeyError:
+            pass
+    return False
+
+def removeEntryFromDict(key, dict):
+    try:
+        print "Popped: ", dict.pop(key)
+    except KeyError:
+        pass
+
+# For Constant propagation #
+def getLatestValFromStackDict(var, stackDict, block):
+    if block == 0 and block in stackDict.keys():
+        if var in stackDict[block].keys():
+            return stackDict[block][var]
+    for i in range(block+1):
+        cur = block - i
+        try:
+            if var in stackDict[cur].keys():
+                return stackDict[cur][var]
+        except KeyError:
+            pass
+    # return
 
 def getTypeValue(dict, val):
     for key in dict.keys():
@@ -29,12 +70,18 @@ def getTypes(variable, block):
             return typeV
         else:
             for i in range(block):
-                typeV = getTypeValue(types[block - i - 1], variable)
+                try:
+                    typeV = getTypeValue(types[block - i - 1], variable)
+                except KeyError:
+                    continue
                 if typeV:
                     return typeV
     else:
         for i in range(block):
-            typeV = getTypeValue(types[block - i - 1], variable)
+            try:
+                typeV = getTypeValue(types[block - i - 1], variable)
+            except KeyError:
+                continue
             if typeV:
                 return typeV
 
@@ -59,15 +106,14 @@ def typeChecking(variable, type, block):
             return False
     else:
         for i in range(block):
-            if i in types.keys():
-                try:
-                    list = types[block - i - 1][type]
-                except KeyError:
-                    continue
-                if variable in list:
-                    return True
+            # if i in types.keys():
+            try:
+                list = types[block - i - 1][type]
+            except KeyError:
+                continue
+            if variable in list:
+                return True
     return False
-
 
 def removeVarDeclFromDict():
     global blockVar, currBlock
@@ -80,6 +126,19 @@ def checkDeclaration(blockVar, currBlock, var):
             if var in blockVar[i]:
                 return 1
     return 0
+
+## Utility function to add Types for each variable per block ##
+def addToTypesDict(variable, typeVal, blckno):
+    dictType = {}
+    if blckno in types.keys():
+            dictType = types[blckno]
+            if typeVal in dictType.keys():
+                dictType[typeVal].append(variable)
+            else:
+                dictType[typeVal] = [variable]
+    else:
+        dictType[typeVal] = [variable]
+        types[currBlock] = dictType
 
 ## Classes for each type ##
 ## Pgm ##
@@ -95,6 +154,10 @@ class Program:
             self.declseq.genCode()
         intermediateCode.append('BLOCK_END')
 
+    def constPropagationOpt(self):
+        self.declseq = self.declseq.constPropagationOpt()
+        return self
+
 class DECLSEQ:
     def __init__(self, declare='', declSeq=''):
         self.declare = declare
@@ -106,6 +169,13 @@ class DECLSEQ:
             if self.declseq:
                 self.declseq.genCode()
 
+    def constPropagationOpt(self):
+        if self.declare:
+            self.declare = self.declare.constPropagationOpt()
+            if self.declseq:
+                self.declseq = self.declseq.constPropagationOpt()
+        return self
+
 class DECLARE:
     def __init__(self, declare):
         ## Can be either Var or Func Declaration ##
@@ -113,6 +183,10 @@ class DECLARE:
 
     def genCode(self):
         self.declare.genCode()
+
+    def constPropagationOpt(self):
+        self.declare = self.declare.constPropagationOpt()
+        return self
 
 ## Variable Declaration ##
 class DECL:
@@ -131,15 +205,29 @@ class DECL:
         intermediateCode.append(';')
         declared = 0
 
+    def constPropagationOpt(self):
+        self.varlist = self.varlist.constPropagationOpt()
+        return self
+
 class TYPE:
     def __init__(self, type):
         self.type = type
+        # self.TYPEV = type
 
     def genCode(self):
         if isinstance(self.type, TYPE):
-            return self.type.type+'[]'
+            return self.type.gettype()+'[]'
         else:
             return self.type
+
+    def gettype(self):
+        if isinstance(self.type, TYPE):
+            return self.type.gettype()+'[]'
+        else:
+            return self.type
+
+    def constPropagationOpt(self):
+        return self
 
 ## Function Declaration ##
 class FUNDECL:
@@ -196,6 +284,13 @@ class FUNDECL:
         fun_param_count.pop()
         currBlock -= 1
 
+    def constPropagationOpt(self):
+        self.stmt = self.stmt.constPropagationOpt()
+        self.id = self.id.constPropagationOpt()
+        if self.formals:
+            self.formals = self.formals.constPropagationOpt()
+        return self
+
 class FORMALS:
     def __init__(self, formal=''):
         self.formal = formal
@@ -207,6 +302,9 @@ class FORMALS:
             ret = self.formal.genCode()
         return ret
 
+    def constPropagationOpt(self):
+        return self
+
 class Formal:
     global intermediateCode
     global sta_arg
@@ -217,24 +315,28 @@ class Formal:
 
     def genCode(self):
         global sta_arg, fun_param_dict, currBlock
-        if self.var.var not in blockVar[0]:
-            fun_param_dict[self.var.var] = int(sta_arg)*4
+        name = self.var.var
+        if name not in blockVar[0]:
+            fun_param_dict[name] = int(sta_arg)*4
+
+        if currBlock in blockVar.keys():
+            if name in blockVar[currBlock]:
+                print "Error: Variable %s declared more than once." %(name)
+                sys.exit(-1)
+            blockVar[currBlock].append(name)
+        else:
+            blockVar[currBlock] = [name]
+
+        addToTypesDict(name, self.type.genCode(), currBlock)
+
         sta_arg += 1
         if self.formal:
             self.formal.genCode()
         return sta_arg
 
-def addToTypesDict(variable, typeVal, blckno):
-    dictType = {}
-    if blckno in types.keys():
-            dictType = types[blckno]
-            if typeVal in dictType.keys():
-                dictType[typeVal].append(variable)
-            else:
-                dictType[typeVal] = [variable]
-    else:
-        dictType[typeVal] = [variable]
-        types[currBlock] = dictType
+    def constPropagationOpt(self):
+        self.var = self.var.constPropagationOpt()
+        return self
 
 class VARLIST:
     global intermediateCode
@@ -260,18 +362,24 @@ class VARLIST:
         if self.varlist:
             self.varlist.genCode()
 
+    def constPropagationOpt(self):
+        self.var = self.var.constPropagationOpt()
+        if self.varlist:
+            self.varlist = self.varlist.constPropagationOpt()
+        return self
+
 ## Var is deprecated - Reusing for some other issue ##
 class VAR:
     global intermediateCode
-    def __init__(self, var, dimstar=''):
+    def __init__(self, var):
         self.var = var
-        self.dimstar  = dimstar
 
     def genCode(self):
         intermediateCode.append(self.var)
-        if self.dimstar:
-            self.dimstar.genCode()
         return self.var
+
+    def constPropagationOpt(self):
+        return self
 
 class DIMSTAR:
     global intermediateCode
@@ -279,14 +387,25 @@ class DIMSTAR:
         self.lbrac = lbrac
         self.rbrac = rbrac
         self.dimstar = dimstar
+        self.TYPEV = ''
 
     def genCode(self):
         global intermediateCode
         if self.lbrac and self.rbrac:
             intermediateCode.append(self.lbrac)
             intermediateCode.append(self.rbrac)
+            self.TYPEV = '[]'
         if self.dimstar:
             self.dimstar.genCode()
+            self.TYPEV += self.dimstar.gettype()
+
+    def gettype(self):
+        if not self.TYPEV:
+            self.genCode()
+        return self.TYPEV
+
+    def constPropagationOpt(self):
+        return self
 
 class DIMEXPR:
     global intermediateCode
@@ -294,9 +413,17 @@ class DIMEXPR:
         self.lbrac = lbrac
         self.rbrac = rbrac
         self.exp = exp
+        self.TYPEV = '[]'
 
     def genCode(self):
         self.exp.genCode()
+
+    def gettype(self):
+        return self.TYPEV
+
+    def constPropagationOpt(self):
+        self.exp = self.exp.constPropagationOpt()
+        return self
 
 ## StmtSeq ##
 class Statements:
@@ -312,6 +439,13 @@ class Statements:
         if self.stmtSeq:
             self.stmtSeq.genCode()
 
+    def constPropagationOpt(self):
+        if self.stmt:
+            self.stmt = self.stmt.constPropagationOpt()
+        if self.stmtSeq:
+            self.stmtSeq = self.stmtSeq.constPropagationOpt()
+        return self
+
 ## VarDecl* ##
 class VARDECLSEQ:
     global intermediateCode
@@ -326,6 +460,13 @@ class VARDECLSEQ:
         if self.varDeclSeq:
             self.varDeclSeq.genCode()
 
+    def constPropagationOpt(self):
+        if self.varDecl:
+            self.varDecl = self.varDecl.constPropagationOpt()
+        if self.varDeclSeq:
+            self.varDeclSeq = self.varDeclSeq.constPropagationOpt()
+        return self
+
 ## Stmt ##
 class Statement:
     global intermediateCode
@@ -337,6 +478,11 @@ class Statement:
         if self.stmt:
             self.stmt.genCode()
             intermediateCode.append(';')
+
+    def constPropagationOpt(self):
+        if self.stmt:
+            self.stmt = self.stmt.constPropagationOpt()
+        return self
 
 class RETURN:
     global intermediateCode
@@ -354,6 +500,11 @@ class RETURN:
             intermediateCode.append('jr $ra')
         else:
             intermediateCode.append('j exit')
+
+    def constPropagationOpt(self):
+        if self.exp:
+            self.exp = self.exp.constPropagationOpt()
+        return self
 
 ## Deprecated class ##
 class Assignment:
@@ -387,6 +538,10 @@ class Assignment:
                 self.rhs.genCode()
                 intermediateCode.append(';')
 
+    def constPropagationOpt(self):
+        ## Here is the actual constant propagation starts ##
+        return self
+
 class Print:
     global intermediateCode
     def __init__(self, exp):
@@ -407,6 +562,13 @@ class Print:
         intermediateCode.append('syscall')
         intermediateCode.append('## End Of Printing Integer ##')
         intermediateCode.append('PRINT_END')
+        if self.exp.gettype() != 'int':
+            print "Error: Printing non integer values.!"
+            sys.exit(-1)
+
+    def constPropagationOpt(self):
+        self.exp = self.exp.constPropagationOpt()
+        return self
 
 class Block:
     global intermediateCode
@@ -428,6 +590,14 @@ class Block:
         removeVarDeclFromDict()
         currBlock -= 1
 
+    def constPropagationOpt(self):
+        global optBlock
+        if self.declseq:
+            self.declseq = self.declseq.constPropagationOpt()
+        if self.stmtseq:
+            self.stmtseq = self.stmtseq.constPropagationOpt()
+        return self
+
 class Input:
     global intermediateCode
     def __init__(self):
@@ -444,6 +614,9 @@ class Input:
     def gettype(self):
         return self.TYPEV
 
+    def constPropagationOpt(self):
+        return self
+
 ## Return Values ##
 class LHS:
     global intermediateCode
@@ -458,7 +631,13 @@ class LHS:
         return ret
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.id_or_array.gettype()
         return self.TYPEV
+
+    def constPropagationOpt(self):
+        self.id_or_array = self.id_or_array.constPropagationOpt()
+        return self
 
 class ArrayAccess:
     global intermediateCode
@@ -488,6 +667,11 @@ class ArrayAccess:
     def gettype(self):
         return self.TYPEV
 
+    def constPropagationOpt(self):
+        self.primary = self.primary.constPropagationOpt()
+        self.exp = self.exp.constPropagationOpt()
+        return self
+
 class SEOPT:
     def __init__(self, se=''):
         self.se = se
@@ -495,6 +679,11 @@ class SEOPT:
     def genCode(self):
         if self.se:
             self.se.genCode()
+
+    def constPropagationOpt(self):
+        if self.se:
+            self.se = self.se.constPropagationOpt()
+        return self
 
 class AEOPT:
     global intermediateCode
@@ -504,6 +693,11 @@ class AEOPT:
     def genCode(self):
         if self.exp:
             self.exp.genCode()
+
+    def constPropagationOpt(self):
+        if self.exp:
+            self.exp = self.exp.constPropagationOpt()
+        return self
 
 class SE:
     global intermediateCode
@@ -552,8 +746,8 @@ class SE:
                     intermediateCode.append('## Storing Register Values to Memory ##')
                     intermediateCode.append('sw $a0, 0($t8)')
                     # elif otherFun == 1:
-
-                if (not self.exp.gettype() == 'input') and self.lhs.gettype() != self.exp.gettype():
+                if (not self.exp.gettype() == 'input') and (self.lhs.gettype() != self.exp.gettype()) \
+                        and (not (self.lhs.gettype() == 'int[][]' and self.exp.gettype() == 'int')):
                     print "Error: Type mismatch in the assignment.!"
                     sys.exit(-1)
 
@@ -564,7 +758,36 @@ class SE:
             self.lhs.genCode()
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.lhs.gettype()
         return self.TYPEV
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        global constantPropagation, optBlock, optBlockVar, constPropStack
+        if self.op:
+            self.exp = self.exp.constPropagationOpt()
+            if self.lhs.type == 'variable' and (self.exp.type == 'num' or self.exp.gettype() == 'bool'):
+                if optBlock in optBlockVar.keys():
+                    optBlockVar[optBlock].append(self.lhs.var)
+                else:
+                    optBlockVar[optBlock] = [self.lhs.var]
+                propDict = {}
+                if optBlock in constPropStack.keys():
+                    propDict = constPropStack.pop(optBlock)
+
+                propDict[self.lhs.var] = self.exp.getValue()
+                constPropStack[optBlock] = propDict
+            else:
+                print "[SE] LHS is an array.!"
+        else:
+            print "[SE] - Unary Operation -, !, ++, --"
+            global loopblock
+            self.lhs = self.lhs.constPropagationOpt()
+            if loopblock == 0:
+                return self.lhs
+
+        return self
 
 class Expression:
     global intermediateCode
@@ -581,7 +804,19 @@ class Expression:
         return ret
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.exp.gettype()
         return self.TYPEV
+
+    def getValue(self):
+        return self.exp.getValue()
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        self.exp = self.exp.constPropagationOpt()
+        if self.exp.type == 'num':
+            return self.exp
+        return self
 
 class Primary:
     global intermediateCode
@@ -607,7 +842,29 @@ class Primary:
         return ret
 
     def gettype(self):
+        if not self.TYPEV:
+            if self.exp in ['true', 'false']:
+                self.TYPEV = 'bool'
+            else:
+                self.TYPEV = self.exp.gettype()
         return self.TYPEV
+
+    def getValue(self):
+        if self.exp in ['true', 'false']:
+            return self.exp
+        elif self.exp.type == 'num':
+            return self.exp
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        if self.exp in ['true', 'false']:
+            return self
+        # elif self.exp == 'false':
+        #     return Number(0)
+        self.exp = self.exp.constPropagationOpt()
+        if self.exp.type == 'num':
+            return self.exp
+        return self
 
 class FUNCALL:
     global intermediateCode
@@ -623,6 +880,9 @@ class FUNCALL:
         self.arglist.genCode()
         intermediateCode.append('jal %s' %(self.id.var))
 
+    def constPropagationOpt(self):
+        return self
+
 class ARGLIST:
     global intermediateCode, sta_arg
     def __init__(self, args=''):
@@ -632,6 +892,10 @@ class ARGLIST:
     def genCode(self):
         if self.args:
             self.args.genCode()
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        return self
 
 class ARGS:
     global intermediateCode
@@ -654,6 +918,12 @@ class ARGS:
             self.args.genCode()
         sta_arg -= 1
 
+    def constPropagationOpt(self):
+        self.exp = self.exp.constPropagationOpt()
+        if self.args:
+            self.args = self.args.constPropagationOpt()
+        return self
+
 class ARRAY:
     global intermediateCode
     def __init__(self, new, type, dimexpr, dimstar):
@@ -675,10 +945,16 @@ class ARRAY:
         intermediateCode.append('syscall')
         intermediateCode.append('## End of sbrk system call ##')
         intermediateCode.append('ori $t8, $v0, 0')
-        self.TYPEV = self.TYPE.genCode()
+        self.TYPEV = self.TYPE.genCode()+self.dimexpr.gettype()
+        if self.dimstar:
+            self.TYPEV += self.dimstar.gettype()
 
     def gettype(self):
         return self.TYPEV
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        return self
 
 ## Return Values ##
 class Number:
@@ -689,12 +965,22 @@ class Number:
         self.TYPEV = 'int'
 
     def genCode(self):
-        code = 'li $t8, %s' %(self.value)
-        intermediateCode.append(code)
+        if int(self.value) >= 0:
+            code = 'li $t8, %s' %(self.value)
+            intermediateCode.append(code)
+        else:
+            intermediateCode.append('li $t8, %s' %str(0 - int(self.value)))
+            intermediateCode.append('sub $t8, $zero, $t8')
+        return str(self.value)
+
+    def getValue(self):
         return str(self.value)
 
     def gettype(self):
         return self.TYPEV
+
+    def constPropagationOpt(self):
+        return self
 
 ## No Return values ##
 class Unary_Ops:
@@ -761,7 +1047,7 @@ class Unary_Ops:
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
                 self.TYPEV = 'int'
             elif self.op == '-':
-                if typeChecking(ret, 'int', currBlock) == False:
+                if typeChecking(ret, 'int', currBlock) == False and self.operand.gettype() != 'int':
                     print "Error: Unary operation - cannot be performed on %s.\nType Error." %(ret)
                     sys.exit(-1)
                 intermediateCode.append('sub $t9, $zero, $t8')
@@ -818,7 +1104,7 @@ class Unary_Ops:
                                 intermediateCode.append('sw $t9, %s($s0)' %((offset)*4))
                 self.TYPEV = 'int'
             elif self.op == '-':
-                if typeChecking(ret, 'int', currBlock) == False:
+                if typeChecking(ret, 'int', currBlock) == False and self.operand.gettype() != 'int':
                     print "Error: Unary operation - cannot be performed on %s.\nType Error." %(ret)
                     sys.exit(-1)
                 intermediateCode.append('sub $t9, $zero, $t8')
@@ -832,7 +1118,107 @@ class Unary_Ops:
         intermediateCode.append('UNARY END')
 
     def gettype(self):
+        if not self.TYPEV:
+            self.TYPEV = self.operand.gettype()
         return self.TYPEV
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        global constPropStack, optBlock, optBlockVar
+        constantPropagation = {}
+        if optBlock in constPropStack.keys():
+            constantPropagation = constPropStack[optBlock]
+
+        # Operators: ++, --, -, !
+        temp = copy.deepcopy(self.operand)
+        self.operand = self.operand.constPropagationOpt()
+        if self.operand.type == 'variable' and \
+            checkIfVarInStackDict(self.operand, constPropStack, optBlock):
+            if self.op in  ['++', '--']:
+                print "Variable is no longer a constant.!"
+            else:
+                # val = constantPropagation[self.operand]
+                val = getLatestValFromStackDict(self.operand, constPropStack, optBlock)
+                if self.op == '!':
+                    if val == 0:
+                        return Primary('true')
+                    else:
+                        return Primary('false')
+                elif self.op == '-':
+                    ## z = -2 - should be a const ##
+                    # return Unary_Ops('-',Number(val))
+                    return Number(0 - int(val))
+        elif self.operand.type == 'lhs':
+            # The below is good, but the actual value should be updated ##
+            # x = z++; -> z should be updated to z+1 value #
+
+            res = 0
+            if self.operand.id_or_array.type == 'num':
+                if self.post == 1:
+                    if self.op == '++':
+                        res = int(self.operand.id_or_array.getValue()) + 1
+                        if optBlock in optBlockVar.keys():
+                            optBlockVar[optBlock].append(temp.id_or_array.var)
+                        else:
+                            optBlockVar[optBlock] = [temp.id_or_array.var]
+                        propDict = {}
+                        if optBlock in constPropStack.keys():
+                            propDict = constPropStack.pop(optBlock)
+
+                        propDict[temp.id_or_array.var] = res
+                        constPropStack[optBlock] = propDict
+                        if loopblock == 0:
+                            return Number(int(self.operand.id_or_array.getValue()))
+                    elif self.op == '--':
+                        res = int(self.operand.id_or_array.getValue()) - 1
+                        if optBlock in optBlockVar.keys():
+                            optBlockVar[optBlock].append(temp.id_or_array.var)
+                        else:
+                            optBlockVar[optBlock] = [temp.id_or_array.var]
+                        propDict = {}
+                        if optBlock in constPropStack.keys():
+                            propDict = constPropStack.pop(optBlock)
+
+                        propDict[temp.id_or_array.var] = res
+                        constPropStack[optBlock] = propDict
+                        if loopblock == 0:
+                            return Number(int(self.operand.id_or_array.getValue()))
+                else:
+                    if self.op == '++':
+                        res = int(self.operand.id_or_array.getValue()) + 1
+                        if optBlock in optBlockVar.keys():
+                            optBlockVar[optBlock].append(temp.id_or_array.var)
+                        else:
+                            optBlockVar[optBlock] = [temp.id_or_array.var]
+                        propDict = {}
+                        if optBlock in constPropStack.keys():
+                            propDict = constPropStack.pop(optBlock)
+
+                        propDict[temp.id_or_array.var] = res
+                        constPropStack[optBlock] = propDict
+                        if loopblock == 0:
+                            return Number(res)
+                    elif self.op == '--':
+                        res = int(self.operand.id_or_array.getValue())-1
+                        if optBlock in optBlockVar.keys():
+                            optBlockVar[optBlock].append(temp.id_or_array.var)
+                        else:
+                            optBlockVar[optBlock] = [temp.id_or_array.var]
+                        propDict = {}
+                        if optBlock in constPropStack.keys():
+                            propDict = constPropStack.pop(optBlock)
+
+                        propDict[temp.id_or_array.var] = res
+                        constPropStack[optBlock] = propDict
+                        if loopblock == 0:
+                            if res >= 0:
+                                return Number(int(self.operand.id_or_array.getValue())-1)
+                            else:
+                                # return Unary_Ops('-', Number(0-res), self.post)
+                                return Number(res)
+        if loopblock != 0:
+            self.operand = temp
+        return self
 
 ## No Return values ##
 class Bin_Ops:
@@ -937,6 +1323,72 @@ class Bin_Ops:
     def gettype(self):
         return self.TYPEV
 
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        # if self.left.exp.type == 'variable':
+        self.left = self.left.constPropagationOpt()
+        self.right = self.right.constPropagationOpt()
+        if self.left.type == 'num' and self.right.type == 'num':
+            if self.op == '+':
+                res = int(self.left.value) + int(self.right.value)
+                return Number(res)
+            elif self.op == '-':
+                res = int(self.left.value) - int(self.right.value)
+                if res >= 0:
+                    return Number(res)
+                else:
+                    return Unary_Ops('-',Number(0 - res))
+            elif self.op == '*':
+                res = int(self.left.value) * int(self.right.value)
+                return Number(res)
+            elif self.op == '/':
+                res = int(self.left.value) / int(self.right.value)
+                return Number(res)
+            elif self.op == '%':
+                res = int(self.left.value) % int(self.right.value)
+                return Number(res)
+            elif self.op == '||':
+                if int(self.left.value) != 0 or int(self.right.value) != 0:
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '&&':
+                if int(self.left.value) != 0 and int(self.right.value) != 0:
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '==':
+                if int(self.left.value) == int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '!=':
+                if int(self.left.value) != int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '<':
+                if int(self.left.value) < int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '<=':
+                if int(self.left.value) <= int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '>':
+                if int(self.left.value) > int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+            elif self.op == '>=':
+                if int(self.left.value) >= int(self.right.value):
+                    return Number(1)
+                else:
+                    return Number(0)
+        return self
+
 ## Return Values ##
 class Names:
     global intermediateCode
@@ -973,6 +1425,21 @@ class Names:
             self.TYPEV = getTypes(self.var, currBlock)
         return self.TYPEV
 
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        global constPropStack, optBlock
+        # constantPropagation = {}
+        # if optBlock in constPropStack.keys():
+        #     constantPropagation = constPropStack[optBlock]
+
+        if checkIfVarInStackDict(self.var, constPropStack, optBlock):
+            val = getLatestValFromStackDict(self.var, constPropStack, optBlock)
+            if val:
+                # if loopblock == 0:
+                return Number(val)
+
+        return self
+
 ## Control Structures ##
 class IF:
     global intermediateCode
@@ -990,6 +1457,36 @@ class IF:
         intermediateCode.append('BRANCH LABEL_IF_END')
         ## Should do pop here ##
         intermediateCode.append(';')
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        global  optBlock, constPropStack, optBlockVar
+        self.exp = self.exp.constPropagationOpt()
+        optBlock += 1
+        ## Actual Updates here ##
+        self.stmt = self.stmt.constPropagationOpt()
+        try:
+            constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        # print "Variables Raj: ", constPropStack
+        # print "Variables Raj: ", optBlockVar[optBlock]
+        if optBlock in optBlockVar.keys():
+            for var in optBlockVar[optBlock]:
+                for i in range(optBlock+1):
+                    try:
+                        removeEntryFromDict(var, constPropStack[i])
+                    except KeyError:
+                        pass
+        # print "Variables Raj: ", constPropStack
+        # print "Variables Raj: ", optBlockVar[optBlock]
+        if optBlock in optBlockVar.keys():
+            optBlockVar.pop(optBlock)
+
+        optBlock -= 1
+
+        return self
 
 class IFELSE:
     global intermediateCode
@@ -1016,6 +1513,69 @@ class IFELSE:
         ## Should do pop-2 here ##
         intermediateCode.append(';')
 
+    ## Have to update - Done ##
+    def constPropagationOpt(self):
+        global  optBlock, constPropStack, optBlockVar
+        ifDict = {}
+        elseDict = {}
+        self.exp = self.exp.constPropagationOpt()
+        optBlock += 1
+        ## Actual Updates here ##
+        self.stmt1 = self.stmt1.constPropagationOpt()
+        try:
+            ifDict = constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        # print "IF - Variables Raj: ", constPropStack
+        # print "IF - Variables Raj: ", optBlockVar[optBlock]
+        try:
+            optBlockVar.pop(optBlock)
+        except KeyError:
+            pass
+        ## Actual Updates here ##
+        self.stmt2 = self.stmt2.constPropagationOpt()
+        try:
+            elseDict = constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        # print "ELSE - Variables Raj: ", constPropStack
+        # print "ELSE - Variables Raj: ", optBlockVar[optBlock]
+
+        ifset = set(ifDict.keys())
+        elseset = set(elseDict.keys())
+        inter = ifset.intersection(elseset)
+        # ifset = ifset.difference(inter)
+        # elseset = elseset.difference(inter)
+        tempset = ifset.union(elseset)
+        uset = tempset.difference(inter)
+        for var in uset:
+            for i in range(optBlock+1):
+                try:
+                    removeEntryFromDict(var, constPropStack[i])
+                except KeyError:
+                    pass
+        # Update the dictionary with the intersection values #
+        for var in inter:
+            if ifDict[var] == elseDict[var]:
+                # Update the dict with the new value
+                for i in range(optBlock):
+                    constPropStack[i][var] = ifDict[var]
+                    # print "Common val: ", var, ifDict[var], elseDict[var], constPropStack
+            else:
+                # Remove the entry from dict #
+                for i in range(optBlock):
+                    try:
+                        removeEntryFromDict(var, constPropStack[i])
+                    except KeyError:
+                        pass
+                # print "To be removed common val: ", var, ifDict[var], elseDict[var], constPropStack
+        if optBlock in optBlockVar.keys():
+            optBlockVar.pop(optBlock)
+        optBlock -= 1
+        return self
+
 class WHILE:
     global intermediateCode
     def __init__(self, exp, stmt):
@@ -1034,6 +1594,37 @@ class WHILE:
         intermediateCode.append('BRANCH LABEL_WHILE_END')
         ## POP-2 While Label ##
         intermediateCode.append(';')
+
+    def constPropagationOpt(self):
+        global optBlock, constPropStack, loopblock
+        self.exp = self.exp.constPropagationOpt()
+
+        optBlock += 1
+        loopblock += 1
+        ## Actual Updates here ##
+        # oldStmt = copy.deepcopy(self.stmt)
+        self.stmt = self.stmt.constPropagationOpt()
+        # self.stmt = oldStmt
+        try:
+            constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        if optBlock in optBlockVar.keys():
+            for var in optBlockVar[optBlock]:
+                for i in range(optBlock+1):
+                    try:
+                        removeEntryFromDict(var, constPropStack[i])
+                    except KeyError:
+                        pass
+        if optBlock in optBlockVar.keys():
+            optBlockVar.pop(optBlock)
+
+        loopblock -= 1
+        optBlock -= 1
+
+
+        return self
 
 ## Homework 04 Updates ##
 class FOR:
@@ -1059,6 +1650,41 @@ class FOR:
         intermediateCode.append('BRANCH LABEL_FOR_END')
         intermediateCode.append(';')
 
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        if self.seopt1:
+            self.seopt1 = self.seopt1.constPropagationOpt()
+        if self.aeopt:
+            self.aeopt = self.aeopt.constPropagationOpt()
+
+        global optBlock, constPropStack, loopblock
+        optBlock += 1
+        loopblock += 1
+
+        ## Actual Updates here ##
+        self.stmt = self.stmt.constPropagationOpt()
+        try:
+            constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        if optBlock in optBlockVar.keys():
+            for var in optBlockVar[optBlock]:
+                for i in range(optBlock+1):
+                    try:
+                        removeEntryFromDict(var, constPropStack[i])
+                    except KeyError:
+                        pass
+        if optBlock in optBlockVar.keys():
+            optBlockVar.pop(optBlock)
+
+        loopblock -= 1
+        optBlock -= 1
+
+        if self.seopt2:
+            self.seopt2 = self.seopt2.constPropagationOpt()
+        return self
+
 class DO_WHILE:
     global intermediateCode
     def __init__(self, stmt, exp):
@@ -1077,6 +1703,34 @@ class DO_WHILE:
         intermediateCode.append('BRANCH LABEL_DO_WHILE_END')
         ## POP-2 While Label ##
         intermediateCode.append(';')
+
+    ## Raj - Have to update ##
+    def constPropagationOpt(self):
+        global optBlock, constPropStack, loopblock
+        optBlock += 1
+        loopblock += 1
+        ## Actual Updates here ##
+        self.stmt = self.stmt.constPropagationOpt()
+        try:
+            constPropStack.pop(optBlock)
+        except KeyError:
+            pass
+        ## Handle Variables Here ##
+        if optBlock in optBlockVar.keys():
+            for var in optBlockVar[optBlock]:
+                for i in range(optBlock+1):
+                    try:
+                        removeEntryFromDict(var, constPropStack[i])
+                    except KeyError:
+                        pass
+        if optBlock in optBlockVar.keys():
+            optBlockVar.pop(optBlock)
+        loopblock += 1
+        optBlock -= 1
+
+        self.exp = self.exp.constPropagationOpt()
+
+        return self
 
 ## Tracking variables - for static semantic check ##
 names = {}
@@ -1123,7 +1777,6 @@ def p_type(p):
            | BOOL
            | VOID
            | type LSQUAREBRACE RSQUAREBRACE'''
-    ## Pending: Need to handle TYPE [] Raj ##
     p[0] = TYPE(p[1])
 
 def p_varlist(p):
@@ -1207,8 +1860,8 @@ def p_aeopt(p):
         p[0] = AEOPT(p[1])
 
 def p_var(p):
-    'var : ID dimstar'
-    p[0] = VAR(p[1], p[2])
+    'var : ID'
+    p[0] = VAR(p[1])
 
 def p_se(p):
     '''SE : lhs EQL expression
@@ -1238,8 +1891,8 @@ def p_lhs(p):
     p[0] = LHS(p[1])
 
 def p_arrayAccess(p):
-    'arrayAccess : Primary LSQUAREBRACE expression RSQUAREBRACE '
-    p[0] = ArrayAccess(p[1], p[2], p[3], p[4])
+    'arrayAccess : Primary LSQUAREBRACE expression RSQUAREBRACE'
+    p[0] = ArrayAccess(p[1], p[3])
 
 def p_expression(p):
     '''expression : SE
@@ -1338,10 +1991,6 @@ def p_expression_unary(p):
     'expression : NOT expression'
     p[0] = Unary_Ops(p[1], Expression(p[2]))
 
-def p_expression_paren(p):
-    'expression : LPAREN expression RPAREN'
-    p[0] = p[2]
-
 ## Function Name: p_<Non-Terminal-Symbol>_<Type> ##
 ## Non Terminal Symbol: expression (can use ae)  ##
 ## Type: binop                                   ##
@@ -1380,10 +2029,29 @@ def p_error(p):
     print "Syntax error due to token - '%s' at line: %d " %(p.value, p.lineno)
     sys.exit(0)
 
-def run(data):
-    global intermediateCode
+def run(data, copypropogation, constpropagation, loopinvariant, commonsubexpelim):
+    global intermediateCode, constantPropagation
     parser = yacc.yacc()
     result = parser.parse(data)
+
+    if copypropogation == 1:
+        ## Perform Copy Propagation
+        print "[copypropogation] Not Implemented yet.!"
+
+    if constpropagation == 1:
+        ## Perform Constant Propagation
+        # print "[constpropagation] Not Implemented yet.!"
+        result = result.constPropagationOpt()
+
+    if loopinvariant == 1:
+        ## Perform Loop Invariant optimization
+        print "[loopinvariant] Not Implemented yet.!"
+
+    if commonsubexpelim == 1:
+        ## Perform Common Sub-exp Elimination
+        print "[commonsubexpelim] Not Implemented yet.!"
+
+    # print constantPropagation
 
     if result:
         print "Parsing Completed.!"

@@ -16,7 +16,7 @@ def print_dict(str,dict):
 
 # Live analysis #
 class LiveAnalysis:
-    def __init__(self, stmt, copy, const, loop, cse):
+    def __init__(self, stmt):
         self.stmt = stmt
         self.math = ['+','-','*','/','%','&&','||','!', '==', '!=', '<', '>', '<=', '>=']
         self.umath = ['++', '--', '!', '-']
@@ -46,10 +46,6 @@ class LiveAnalysis:
         self.diffset = set([])
         self.Rin = {}
         self.Rout = {}
-        self.const = const
-        self.copy = copy
-        self.loop = loop
-        self.cse = cse
 
     def removeLinesFromStatement(self, stmt, idx, var):
         countVar = stmt.count(var)
@@ -966,61 +962,25 @@ class LiveAnalysis:
         length = len(stmt)
         gen = {}
         kill = {}
+
         self.Rin[0] = set([])
         self.Rout[0] = set([])
-        loopStart = 0
-        # ifStart = 0
-        ifelseStart = 0
-        ifsetStack = {}
-        endbranchStack = {}
         for lno in range(length):
             self.diffset = set([])
-            gen[lno] = ['']
-            kill[lno] = ''
             resplit = re.split(' ', stmt[lno])
-            if stmt[lno] == 'BRANCH LABEL_IF_ELSE':
-                ifelseStart += 1
-                ifsetStack[ifelseStart] = self.Rout[lno-1]
-            elif stmt[lno] == 'BRANCH LABEL_IF_ELSE_END':
-                ifelseStart -= 1
-
-            if resplit[0] == '__WHILE_LABEL_START__':
-                loopStart += 1
-            elif resplit[0] == 'BRANCH LABEL_WHILE_END':
-                loopStart -= 1
-
-            # if loopStart == 0 and ifStart ==0 and ifelseStart ==0:
             if resplit[0] in ['li', 'ori', 'add', 'sub']:
                 varlist = re.split(',', resplit[1])
                 gen[lno] = [stmt[lno]]
                 kill[lno] = varlist[0]
-            elif resplit[0] == 'mflo':
-                gen[lno] = [stmt[lno]]
-                kill[lno] = varlist[0]
-            elif resplit[0] == 'mult':
-                gen[lno] = [stmt[lno]]
-                kill[lno] = '$LO'
-            elif resplit[0] == 'div':
-                gen[lno] = [stmt[lno]]
-                kill[lno] = '$LO'
+            # elif resplit[0] == 'ori':
+            #     varlist = re.split(',', resplit[1])
+            #     gen[varlist[0]] = lno
+            #     kill[lno] = varlist[0]
             else:
                 gen[lno] = ['']
                 kill[lno] = ''
-
             if lno > 0:
-                # if ifelseStart == 0:
-                if resplit[-1] == '__IF_LABEL__' and stmt[lno] != 'b __IF_LABEL__':
-                    self.Rin[lno] = ifsetStack.pop(ifelseStart)
-                else:
-                    self.Rin[lno] = self.Rout[lno-1]
-                ## Branch End - Intersection ##
-                if stmt[lno] == 'BRANCH LABEL_IF_ELSE_END':
-                    ## Perform Union of Insets ##
-                    # Union of If-End and Current End
-                    # print " End of branch: ", endbranchStack[ifelseStart+1]
-                    self.Rin[lno] = set(self.Rin[lno]).union(endbranchStack.pop(ifelseStart+1))
-
-
+                self.Rin[lno] = self.Rout[lno-1]
             for i in self.Rin[lno]:
                 if i and kill[lno] in i:
                     try:
@@ -1028,132 +988,30 @@ class LiveAnalysis:
                         varlist = re.split(',', resplit[1])
                     except IndexError:
                         pass
-                    if varlist[0] == kill[lno] and resplit[0] not in ['mult', 'div']:
+                    if varlist[0] == kill[lno]:
                         self.diffset = self.diffset.union([i])
-
-                    ## Have to handle for mult and div ##
 
             # print lno, ' Diffset: ', diffset, 'kill ', kill[lno]
             # print lno+1, 'kill ', kill[lno], ' Stmt: ',stmt[lno], ' Diffset: ', diffset
             # Rout[lno] = set(gen[lno]).union(set(Rin[lno]).difference(set(kill[lno])) )
             self.Rout[lno] = set(gen[lno]).union(set(self.Rin[lno]).difference(self.diffset))
-
-            if stmt[lno] == 'b __IF_LABEL__':
-                endbranchStack[ifelseStart] = self.Rout[lno]
-                # print " Branch ", self.Rout[lno]
-
         # print_dict(gen)
         # print_dict(kill)
 
-        print stmt
-        print_dict('INSET: ', self.Rin)
-
-        print_dict('OUTSET', self.Rout)
-
-
-    def reachingDefinitionforLoops(self, stmt):
-        length = len(stmt)
-        gen = {}
-        kill = {}
-        self.Rin[0] = set([])
-        self.Rout[0] = set([])
-        loopStart = 0
-        # ifStart = 0
-        ifelseStart = 0
-        ifsetStack = {}
-        endbranchStack = {}
-        while(1):
-            oldins = copy.deepcopy(self.Rin)
-            for lno in range(length):
-                self.diffset = set([])
-                gen[lno] = ['']
-                kill[lno] = ''
-                resplit = re.split(' ', stmt[lno])
-                if stmt[lno] == 'BRANCH LABEL_IF_ELSE':
-                    ifelseStart += 1
-                    ifsetStack[ifelseStart] = self.Rout[lno-1]
-                elif stmt[lno] == 'BRANCH LABEL_IF_ELSE_END':
-                    ifelseStart -= 1
-
-                if resplit[0] == '__WHILE_LABEL_START__':
-                    loopStart += 1
-                elif resplit[0] == 'BRANCH LABEL_WHILE_END':
-                    loopStart -= 1
-
-                # if loopStart == 0 and ifStart ==0 and ifelseStart ==0:
-                if resplit[0] in ['li', 'ori', 'add', 'sub']:
-                    varlist = re.split(',', resplit[1])
-                    gen[lno] = [stmt[lno]]
-                    kill[lno] = varlist[0]
-                elif resplit[0] == 'mflo':
-                    gen[lno] = [stmt[lno]]
-                    kill[lno] = varlist[0]
-                elif resplit[0] == 'mult':
-                    gen[lno] = [stmt[lno]]
-                    kill[lno] = '$LO'
-                elif resplit[0] == 'div':
-                    gen[lno] = [stmt[lno]]
-                    kill[lno] = '$LO'
-                else:
-                    gen[lno] = ['']
-                    kill[lno] = ''
-
-                if lno > 0:
-                    # if ifelseStart == 0:
-                    if resplit[-1] == '__IF_LABEL__' and stmt[lno] != 'b __IF_LABEL__':
-                        self.Rin[lno] = ifsetStack.pop(ifelseStart)
-                    else:
-                        self.Rin[lno] = self.Rout[lno-1]
-                    ## Branch End - Intersection ##
-                    if stmt[lno] == 'BRANCH LABEL_IF_ELSE_END':
-                        ## Perform Union of Insets ##
-                        # Union of If-End and Current End
-                        # print " End of branch: ", endbranchStack[ifelseStart+1]
-                        self.Rin[lno] = set(self.Rin[lno]).union(endbranchStack.pop(ifelseStart+1))
-
-
-                for i in self.Rin[lno]:
-                    if i and kill[lno] in i:
-                        try:
-                            resplit = re.split(' ', i)
-                            varlist = re.split(',', resplit[1])
-                        except IndexError:
-                            pass
-                        if varlist[0] == kill[lno] and resplit[0] not in ['mult', 'div']:
-                            self.diffset = self.diffset.union([i])
-
-                        ## Have to handle for mult and div ##
-
-                # print lno, ' Diffset: ', diffset, 'kill ', kill[lno]
-                # print lno+1, 'kill ', kill[lno], ' Stmt: ',stmt[lno], ' Diffset: ', diffset
-                # Rout[lno] = set(gen[lno]).union(set(Rin[lno]).difference(set(kill[lno])) )
-                self.Rout[lno] = set(gen[lno]).union(set(self.Rin[lno]).difference(self.diffset))
-
-                if stmt[lno] == 'b __IF_LABEL__':
-                    endbranchStack[ifelseStart] = self.Rout[lno]
-                    # print " Branch ", self.Rout[lno]
-            # print oldins, ' - ', self.Rin
-            print_dict('INSET: ', self.Rin)
-
+        # print stmt
+        # print_dict('INSET: ', self.Rin)
+        #
         # print_dict('OUTSET', self.Rout)
-            if oldins == self.Rin:
-                break
-            else:
-                print "Retrying"
 
-    def validateCopyPropagation(self, pos, inSet, newstmt, length, lineSet):
+    def validateCopyPropagation(self, pos, inSet, stmt, length, lineSet):
         variable1 = ''
         variable = ''
         lhs = ''
-        stmt = copy.deepcopy(newstmt)
         if lineSet[0] == 'li':
             return stmt
         elif lineSet[0] == 'ori':
             lhs = lineSet[1]
             variable = lineSet[2]
-            if lhs == variable:
-                stmt.pop(pos)
-                return stmt
         elif lineSet[0] == 'addi':
             lhs = lineSet[1]
             variable = lineSet[2]
@@ -1175,12 +1033,10 @@ class LiveAnalysis:
             variable1 = lineSet[2]
         elif lineSet[0] == 'mflo':
             lhs = lineSet[1]
-            variable = '$LO'
-            # if lhs ==
-            #     return stmt
+            return stmt
         elif lineSet[0] == 'mfhi':
             lhs = lineSet[1]
-            # return stmt
+            return stmt
         elif lineSet[0] in ['la', 'sw']:
             return stmt
         elif lineSet[0] == 'beq':
@@ -1192,14 +1048,6 @@ class LiveAnalysis:
             variable1 = lineSet[3]
         else:
             return stmt
-
-        if lhs[0] == '$':
-            lhs = '\\'+lhs
-        if variable and variable[0] == '$':
-            variable = '\\'+variable
-        if variable1 and variable1[0] == '$':
-            variable1 = '\\'+variable1
-
         count1 = 0
         count2 = 0
         copy1 = ''
@@ -1210,14 +1058,7 @@ class LiveAnalysis:
             try:
                 split = re.split(' ', ins)
                 split = [str.strip(',') for str in split]
-                if split[0] in ['mult', 'div']:
-                    linelhs = '\\$LO'
-                else:
-                    linelhs = split[1]
-
-                if linelhs[0] == '$':
-                    linelhs = '\\'+linelhs
-
+                linelhs = split[1]
                 if variable == linelhs:
                     copy1 = ins
                     count1 += 1
@@ -1237,76 +1078,49 @@ class LiveAnalysis:
         for i in range(pos):
             rel = pos - i - 1
             line = stmt[rel]
-            if 'li' in line:
-                continue
-            if re.findall('mflo', line):
-                print "hello"
             if line == copy1:
-                print "First Line: ", line, " ---- raja ---- ", rel, " Cpy1: ", copy1
+                print line, " ---- raja ---- ", rel
                 pos1 = rel
-                break
-
-        for i in range(pos):
-            rel = pos - i - 1
-            line = stmt[rel]
-            if 'li' in line:
-                continue
-            if line == copy2:
-                print "Second Line: ", line, " ---- raja ---- ", rel
+            elif line == copy2:
                 pos2 = rel
-                break
 
-        rhs = re.split(' ', copy1)
-        rhs = [str.strip(',') for str in rhs]
         if pos1 != -1:
-            print "Statement ", stmt[pos1+1:pos]
-            for i in range(pos1+1, pos-1):
+            for i in range(pos1+1, pos-pos1-1):
                 # There should not be any other definition for lhs ##
                 # There should not be other definitions for any of RHS variables ##
                 line = stmt[i]
                 split = re.split(' ', line)
                 split = [str.strip(',') for str in split]
                 try:
-                    if split[1] == variable or rhs[2] == split[1]:
+                    if split[1] == variable:
                         return stmt
                 except IndexError:
                     pass
-        rhs = re.split(' ', copy2)
-        rhs = [str.strip(',') for str in rhs]
         if pos2 != -1:
-            print "Statement ", stmt[pos2+1:pos-1]
-            for i in range(pos2+1, pos-1):
+            for i in range(pos2+1, pos-pos2-1):
                 # There should not be any other definition for lhs ##
                 # There should not be other definitions for any of RHS variables ##
                 line = stmt[i]
                 split = re.split(' ', line)
                 split = [str.strip(',') for str in split]
                 try:
-                    if split[1] == variable1 or rhs[2] == split[1]:
+                    if split[1] == variable1:
                         return stmt
                 except IndexError:
                     pass
         # print lineSet, inSet, pos
         # return True
-
         if pos1 != -1:
             line = stmt[pos1]
             split = re.split(' ', line)
-
             split = [str.strip(',') for str in split]
-            if split[0] not in ['mult', 'div']:
-                print "First Splits: ",split[1], split[2], "statement: ", stmt[pos]
-                stmt[pos] = re.sub(split[1], split[2], stmt[pos])
+            stmt[pos] = re.sub(split[1], split[2], stmt[pos])
 
         if pos2 != -1:
             line = stmt[pos2]
             split = re.split(' ', line)
             split = [str.strip(',') for str in split]
-            print split[1], split[2], line
             stmt[pos] = re.sub(split[1], split[2], stmt[pos])
-
-        print "Changed Statement: ", stmt[pos], " in reference to : ", stmt[pos1]
-        print
 
         return stmt
 
@@ -1327,31 +1141,46 @@ class LiveAnalysis:
             # Else redo the copypropagation again and continue.
             if len(self.Rin[i]) == 0 or (len(self.Rin[i]) == 1 and self.Rin[i] == set([''])) :
                     continue
-            # print " Init - ", resplit
-            stmt = self.validateCopyPropagation(i,self.Rin[i], newstmt, length, resplit)
-            if stmt != newstmt:
-                print "Something Changed.!"
-                return stmt
+            newstmt = self.validateCopyPropagation(i,self.Rin[i], newstmt, length, resplit)
+
+                # print "Change the definition."
+                ## All the valid cases will be present ##
+                ## From here, I need to replace LHS with RHS value ##
+                ## Then exit ##
+                # llist <- newstmt[0:i]     ##
+                # rlist <- newstmt[i+1:-1]  ##
+                # done = 1
+                # if len(resplit) == 4:
+                #     lhs = resplit[1]
+                #     var1 = resplit[2]
+                #     var2 = resplit[3]
+                #     if resplit[0] not in ['li', 'ori']:
+                #         print "Its not CSE.!", lhs, var1, var2
+                #         continue
+
+                    ## I can replace lhs with var1 from the current statement ##
+                    ## Delete the current statement ##
+                    # for pos in range(i, length):
+                    #     if lhs in newstmt[pos]:
+                    #         newstmt[pos] = re.sub(lhs, var1, newstmt[pos])
+                # elif len(resplit) == 3:
+                #     try:
+                #         lhs = resplit[1]
+                #         var1 = resplit[2]
+                        ## I can replace lhs with var1 from the current statement ##
+                        ## Delete the current statement ##
+                        # for pos in range(i+1, length):
+                        #     if lhs in newstmt[pos]:
+                        #         newstmt[pos] = re.sub(lhs, var1, newstmt[pos])
+                    # except IndexError:
+                    #     pass
+            # if done == 1:
+                ## print newstmt[i], " -- " , i, self.Rin[i]
+                ## newstmt = newstmt[0:i] + newstmt[i+2:-1]
+                ## print newstmt
+                # newstmt[i] = re.sub(lhs, var1, newstmt[i])
+                # break
         return newstmt
-
-
-    def loopinvariantopt(self, newstmt):
-        length = len(newstmt)
-        self.reachingDefinitionforLoops(newstmt)
-        for i in range(length):
-            resplit = re.split(' ', newstmt[i])
-            resplit = [str.strip(',') for str in resplit]
-
-            # if len(self.Rin[i]) == 0 or (len(self.Rin[i]) == 1 and self.Rin[i] == set([''])) :
-            #         continue
-            # print "Raj - Init - ", resplit
-            # stmt = self.validateCopyPropagation(i,self.Rin[i], newstmt, length, resplit)
-            # if stmt != newstmt:
-            #     print "Something Changed.!"
-            #     return stmt
-
-        return newstmt
-
     # Starts the register allocation algorithm based on the number of registers #
     def run(self):
         ret = -1
@@ -1368,26 +1197,21 @@ class LiveAnalysis:
         newstmt = self.blockVariableUpdates(newstmt)
         newstmt = self.removeTypes(newstmt)
 
-        if self.copy == 1:
-            print "Reaching Definitions"
-            ## Reaching Definitions ##
-            self.reachingDefinition(newstmt)
-            print newstmt
-            # sys.exit(0)
-            while(1):
-                stmt = copy.deepcopy(newstmt)
-                newstmt = self.copyPropagation(newstmt)
-                if stmt == newstmt:
-                    break
-                else:
-                    # print "Re doing again.!\n"
-                    self.Rin = {}
-                    self.Rout = {}
-                    self.reachingDefinition(newstmt)
+        print "Reaching Definitions"
+        ## Reaching Definitions ##
+        self.reachingDefinition(newstmt)
+        while(1):
+            stmt = copy.deepcopy(newstmt)
+            newstmt = self.copyPropagation(newstmt)
+            if stmt == newstmt:
+                break
+            else:
+                print "Re doing again.!\n"
+                self.Rin = {}
+                self.Rout = {}
+                break
+                self.reachingDefinition(newstmt)
 
-        if self.loop == 1:
-            print "Loop motion"
-            newstmt = self.loopinvariantopt(newstmt)
 
         # print newstmt
         newstmt = self.removeUnusedAssignments2(newstmt)
